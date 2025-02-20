@@ -42,35 +42,35 @@ struct StatsView: View {
     }
 }
 
-struct TripListView: View {
-    @State private var trips: [Trip] = []
-    private let db = Firestore.firestore()
-   
-    var body: some View {
-        List(trips, id: \.id) { trip in
-            VStack(alignment: .leading) {
-                Text("From: \(trip.startLocation) → To: \(trip.endLocation)")
-                    .font(.headline)
-                Text("Status: \(trip.TripStatus.rawValue)")
-                    .font(.subheadline)
-            }
-        }
-        .onAppear(perform: fetchTrips)
-        .navigationTitle("Trips")
-    }
-    
-    private func fetchTrips() {
-        db.collection("trips").getDocuments { snapshot, error in
-            guard let documents = snapshot?.documents, error == nil else {
-                print("Error fetching trips: \(error?.localizedDescription ?? "Unknown error")")
-                return
-            }
-            self.trips = documents.compactMap { doc in
-                try? doc.data(as: Trip.self)
-            }
-        }
-    }
-}
+//struct TripListView: View {
+//    @State private var trips: [Trip] = []
+//    private let db = Firestore.firestore()
+//   
+//    var body: some View {
+//        List(trips, id: \.id) { trip in
+//            VStack(alignment: .leading) {
+//                Text("From: \(trip.startLocation) → To: \(trip.endLocation)")
+//                    .font(.headline)
+//                Text("Status: \(trip.TripStatus.rawValue)")
+//                    .font(.subheadline)
+//            }
+//        }
+//        .onAppear(perform: fetchTrips)
+//        .navigationTitle("Trips")
+//    }
+//    
+//    private func fetchTrips() {
+//        db.collection("trips").getDocuments { snapshot, error in
+//            guard let documents = snapshot?.documents, error == nil else {
+//                print("Error fetching trips: \(error?.localizedDescription ?? "Unknown error")")
+//                return
+//            }
+//            self.trips = documents.compactMap { doc in
+//                try? doc.data(as: Trip.self)
+//            }
+//        }
+//    }
+//}
 struct SearchBarView: View {
     var body: some View {
         HStack {

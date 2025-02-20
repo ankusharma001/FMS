@@ -79,19 +79,37 @@ class Driver: User {
     var upcomingTrip: Trip?
 
     init(name: String, email: String, phone: String, experience: Experience, license: String, geoPreference: GeoPreference, vehiclePreference: VehicleType, status: Bool) {
-        self.experience = experience
-        self.license = license
-        self.geoPreference = geoPreference
-        self.vehiclePreference = vehiclePreference
-        self.status = status
-        self.upcomingTrip = nil
+          self.experience = experience
+          self.license = license
+          self.geoPreference = geoPreference
+          self.vehiclePreference = vehiclePreference
+          self.status = status
+          self.upcomingTrip = nil
+          super.init(name: name, email: email, phone: phone, role: .driver)
+      }
+
+    required init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        self.experience = try container.decode(Experience.self, forKey: .experience)
+        self.license = try container.decode(String.self, forKey: .license)
+        self.geoPreference = try container.decode(GeoPreference.self, forKey: .geoPreference)
+        self.vehiclePreference = try container.decode(VehicleType.self, forKey: .vehiclePreference)
+        self.status = try container.decode(Bool.self, forKey: .status)
+        self.upcomingTrip = try container.decodeIfPresent(Trip.self, forKey: .upcomingTrip)
+
+        let name = try container.decode(String.self, forKey: .name)
+        let email = try container.decode(String.self, forKey: .email)
+        let phone = try container.decode(String.self, forKey: .phone)
+        
         super.init(name: name, email: email, phone: phone, role: .driver)
     }
-    
-    required init(from decoder: any Decoder) throws {
-        fatalError("init(from:) has not been implemented")
+
+    enum CodingKeys: String, CodingKey {
+        case name, email, phone, experience, license, geoPreference, vehiclePreference, status, upcomingTrip
     }
 }
+
 
 class Vehicle: Codable, Identifiable {
     @DocumentID var id: String? = UUID().uuidString  // Firestore Document ID
@@ -133,15 +151,16 @@ class Vehicle: Codable, Identifiable {
         self.vehicleImage = try values.decode(String.self, forKey: .vehicleImage)
         self.insurance = try values.decode(String.self, forKey: .insurance)
         self.pollution = try values.decode(String.self, forKey: .pollution)
+        self.status = try values.decode(Bool.self, forKey: .status)
         
         // Custom decoding for `status` to handle type mismatch
-        if let statusString = try values.decodeIfPresent(String.self, forKey: .status) {
-            // If it's a string, convert it to Bool (assuming "true" or "false" string values)
-            self.status = (statusString.lowercased() == "true")
-        } else {
-            // If it's not a string, attempt to decode as Bool
-            self.status = try values.decodeIfPresent(Bool.self, forKey: .status) ?? true // Default to true if no value
-        }
+//        if let statusString = try values.decodeIfPresent(String.self, forKey: .status) {
+//            // If it's a string, convert it to Bool (assuming "true" or "false" string values)
+//            self.status = (statusString.lowercased() == "true")
+//        } else {
+//            // If it's not a string, attempt to decode as Bool
+//            self.status = try values.decodeIfPresent(Bool.self, forKey: .status) ?? true // Default to true if no value
+//        }
     }
 
     enum CodingKeys: String, CodingKey {
@@ -160,8 +179,8 @@ class Vehicle: Codable, Identifiable {
 }
 
 
-class Trip: Codable {
-    @DocumentID var id: String? = UUID().uuidString
+class Trip: Identifiable, Codable {
+    @DocumentID var id: String?  // Firestore will generate this automatically
     var tripDate: Date
     var startLocation: String
     var endLocation: String
@@ -182,6 +201,8 @@ class Trip: Codable {
         self.assignedVehicle = assignedVehicle
     }
 }
+
+
 
 /*class FirebaseService {
     private let db = Firestore.firestore()
