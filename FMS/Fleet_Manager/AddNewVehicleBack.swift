@@ -146,6 +146,7 @@ struct AddNewVehicle: View {
     @State private var insurance: UIImage?
     @State private var pollutionCertificate: UIImage?
     @State private var vehiclePhoto: UIImage?
+    @State private var status = true
     
     @State private var showAlert = false
     @State private var alertMessage = ""
@@ -266,7 +267,7 @@ struct AddNewVehicle: View {
             vehicleImage: "",
             insurance: "",
             pollution: "",
-            status: true
+            status: status
         )
 
         let group = DispatchGroup()
@@ -306,7 +307,8 @@ struct AddNewVehicle: View {
                 "rc": newVehicle.rc,
                 "vehicleImage": newVehicle.vehicleImage,
                 "insurance": newVehicle.insurance,
-                "pollution": newVehicle.pollution
+                "pollution": newVehicle.pollution,
+                "status": true
             ]) { error in
                 if let error = error {
                     print("Error adding vehicle: \(error)")
