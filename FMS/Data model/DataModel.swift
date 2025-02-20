@@ -104,7 +104,7 @@ class Vehicle: Codable, Identifiable {
     var vehicleImage: String
     var insurance: String
     var pollution: String
-    var status: Bool
+    var status: Bool 
     
     init(type: VehicleType, model: String, registrationNumber: String, fuelType: FuelType, mileage: Int, rc: String, vehicleImage: String, insurance: String, pollution: String, status: Bool) {
         self.type = type

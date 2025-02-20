@@ -2,6 +2,58 @@ import SwiftUI
 import _PhotosUI_SwiftUI
 import FirebaseFirestore
 
+struct DrtiverImageLoader: View {
+    let imageUrl: String?
+    
+    var body: some View {
+        if let imageUrl = imageUrl, let url = URL(string: imageUrl), !imageUrl.isEmpty {
+            AsyncImage(url: url) { phase in
+                switch phase {
+                case .empty:
+                    ProgressView()
+                        .onAppear {
+                            print("📷 Loading image...")
+                        }
+                case .success(let image):
+                    image.resizable()
+                        .scaledToFit()
+                        .frame(height: 220)
+                        .cornerRadius(15)
+                        .onAppear {
+                            print("✅ Successfully loaded image")
+                        }
+                case .failure(let error):
+                    placeholderImage
+                        .onAppear {
+                            print("❌ Failed to load image: \(error.localizedDescription)")
+                        }
+                @unknown default:
+                    EmptyView()
+                }
+            }
+            .onAppear {
+                print("📷 Attempting to load image from URL: \(imageUrl)")
+            }
+            .padding(.horizontal)
+        } else {
+            placeholderImage
+                .onAppear {
+                    print("⚠️ No valid image URL provided: \(imageUrl ?? "nil")")
+                }
+        }
+    }
+    
+    private var placeholderImage: some View {
+        Image(systemName: "photo.fill")
+            .resizable()
+            .scaledToFit()
+            .frame(height: 220)
+            .foregroundColor(.gray)
+            .opacity(0.5)
+            .padding(.horizontal)
+    }
+}
+
 struct DriverDetails: View {
     let user: User
 
@@ -142,29 +194,10 @@ struct AddDriverView: View {
 
             Section(header: Text("License Photo")) {
                 ZStack {
-                    if let image = licenseImage {
-                        Image(uiImage: image)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(height: 150)
-                            .cornerRadius(10)
-                    } else {
-                        RoundedRectangle(cornerRadius: 10)
-                            .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [5]))
-                            .frame(height: 150)
-                            .overlay(
-                                VStack {
-                                    Image(systemName: "camera")
-                                        .resizable()
-                                        .scaledToFit()
-                                        .frame(width: 40, height: 40)
-                                        .foregroundColor(.gray)
-                                    Text("Tap to upload")
-                                        .font(.caption)
-                                        .foregroundColor(.gray)
-                                }
-                            )
-                    }
+//                    DrtiverImageLoader(imageUrl: getFormattedImageUrl(Driver.))
+//                        .onAppear {
+//                            print("🔍 Vehicle image property: \(vehicle.vehicleImage)")
+//                        }
                 }
                 .onTapGesture {
                     showImagePicker.toggle()
@@ -197,7 +230,7 @@ struct AddDriverView: View {
                 }
             }
         }
-        .navigationBarTitle("Driver Details", displayMode: .inline)
+//        .navigationBarTitle("Driver Details", displayMode: .inline)
         .navigationBarItems(
                   trailing: Button(isEditing ? "Done" : "Edit") {
                       if isEditing {
