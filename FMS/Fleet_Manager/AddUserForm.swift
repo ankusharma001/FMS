@@ -590,22 +590,104 @@ struct AddUserView: View {
     }
     
     func uploadLicensePhotoToCloudinary() {
-        guard let image = licensePhoto else { return }
+        guard let image = licensePhoto else {
+            alertMessage = "No license photo selected"
+            showingAlert = true
+            return
+        }
         
         isLoading = true
         
-        cloudinary.createUploader().upload(data: image.jpegData(compressionQuality: 0.8)!, uploadPreset: "FMS-iNFOSYS", completionHandler:  { (result, error) in
-            if let error = error {
-                print("❌ Error uploading photo: \(error.localizedDescription)")
-                alertMessage = "Failed to upload photo"
-                showingAlert = true
-            } else if let _ = result {
-                print("✅ Photo uploaded successfully")
-                alertMessage = "Photo uploaded successfully!"
-                showingAlert = true
+        uploadImageToCloud(image) { url in
+            DispatchQueue.main.async {
+                self.isLoading = false
+                
+                if let imageUrl = url {
+                    print("✅ License photo uploaded successfully: \(imageUrl)")
+                    
+                    // Update the driver record with the license image URL
+                    let loginModel_t = LoginViewModel()
+                    // Assuming you have or will add this method to your LoginViewModel
+                    loginModel_t.updateDriverLicenseImage(email: self.email, licenseImageUrl: imageUrl)
+                    
+                    self.alertMessage = "Photo uploaded successfully!"
+                } else {
+                    self.alertMessage = "Failed to upload photo"
+                }
+                self.showingAlert = true
             }
-            isLoading = false
-        })
+        }
+    }
+
+    func uploadImageToCloud(_ image: UIImage, completion: @escaping (String?) -> Void) {
+        guard let imageData = image.jpegData(compressionQuality: 0.8) else {
+            print("⚠️ Failed to prepare image data")
+            completion(nil)
+            return
+        }
+
+        let url = URL(string: "https://api.cloudinary.com/v1_1/\(FMSCloudinaryConfig.cloudName)/image/upload")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+
+        let boundary = UUID().uuidString
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+
+        var body = Data()
+        let filename = "\(UUID().uuidString).jpg"
+        
+        // Append image data
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(filename)\"\r\n".data(using: .utf8)!)
+        body.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
+        body.append(imageData)
+        body.append("\r\n".data(using: .utf8)!)
+        
+        // Append upload preset
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"upload_preset\"\r\n\r\n".data(using: .utf8)!)
+        body.append("\(FMSCloudinaryConfig.uploadPreset)\r\n".data(using: .utf8)!)
+        
+        body.append("--\(boundary)--\r\n".data(using: .utf8)!)
+        request.httpBody = body
+        print("Starting license image upload, size: \(imageData.count) bytes")
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                print("⚠️ Upload network error: \(error)")
+                completion(nil)
+                return
+            }
+            
+            if let httpResponse = response as? HTTPURLResponse {
+                print("Upload HTTP status: \(httpResponse.statusCode)")
+                
+                if httpResponse.statusCode != 200 {
+                    if let data = data, let errorStr = String(data: data, encoding: .utf8) {
+                        print("⚠️ Cloudinary error response: \(errorStr)")
+                    }
+                    completion(nil)
+                    return
+                }
+            }
+
+            if let data = data {
+                do {
+                    let json = try JSONDecoder().decode(FMSCloudinaryResponse.self, from: data)
+                    print("Successfully parsed Cloudinary response with URL: \(json.secureUrl)")
+                    completion(json.secureUrl)
+                } catch {
+                    print("⚠️ Failed to decode Cloudinary response: \(error)")
+                    if let responseString = String(data: data, encoding: .utf8) {
+                        print("Raw response: \(responseString)")
+                    }
+                    completion(nil)
+                }
+            } else {
+                print("⚠️ No data received from Cloudinary")
+                completion(nil)
+            }
+        }.resume()
     }
 }
 

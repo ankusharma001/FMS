@@ -128,32 +128,6 @@ class LoginViewModel: ObservableObject {
         }
     }
 
-
-    
-//    private func createDriverProfile(userId: String, userData: [String: Any], driverData: [String: Any], password: String) {
-//        let batch = db.batch()
-//        
-//        let userRef = db.collection("users").document(userId)
-//        let driverRef = db.collection("drivers").document(userId)
-//        
-//        batch.setData(userData, forDocument: userRef)
-//        batch.setData(driverData, forDocument: driverRef)
-//        
-//        batch.commit { [weak self] error in
-//            DispatchQueue.main.async {
-//                if let error = error {
-//                    self?.errorMessage = "Firestore batch commit failed: \(error.localizedDescription)"
-//                    self?.showError = true
-//                    print("Firestore Error: \(error.localizedDescription)")
-//                } else {
-//                    print("Driver account created successfully with email: \(userData["email"] as? String ?? "") and password: \(password)")
-//                    print("User Data: \(userData)")
-//                    print("Driver Data: \(driverData)")
-//                }
-//                self?.isLoading = false
-//            }
-//        }
-//    }
     
     private func fetchUserData(userId: String) {
         db.collection("users").document(userId).getDocument { [weak self] snapshot, error in
@@ -272,5 +246,53 @@ class LoginViewModel: ObservableObject {
         let length = 12
         let characters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*"
         return String((0..<length).map { _ in characters.randomElement()! })
+    }
+    
+    // Add this to your LoginViewModel class
+    func updateDriverLicenseImage(email: String, licenseImageUrl: String, completion: ((Bool, String) -> Void)? = nil) {
+        let db = Firestore.firestore()
+        
+        print("🔍 Searching for user with email: \(email)")
+        print("🔗 License URL to update: \(licenseImageUrl)")
+        
+        // Find the user document by email
+        db.collection("users").whereField("email", isEqualTo: email)
+            .getDocuments { (querySnapshot, error) in
+                if let error = error {
+                    let errorMsg = "Error getting user document: \(error.localizedDescription)"
+                    print("❌ \(errorMsg)")
+                    completion?(false, errorMsg)
+                    return
+                }
+                
+                // Check if any documents were returned
+                if let count = querySnapshot?.documents.count {
+                    print("📊 Found \(count) documents matching email: \(email)")
+                }
+                
+                guard let document = querySnapshot?.documents.first else {
+                    let errorMsg = "User document not found for email: \(email)"
+                    print("❌ \(errorMsg)")
+                    completion?(false, errorMsg)
+                    return
+                }
+                
+                print("✅ Found user document with ID: \(document.documentID)")
+                print("📝 Current document data: \(document.data())")
+                
+                // Update the license image URL
+                document.reference.updateData([
+                    "licenseImageUrl": licenseImageUrl
+                ]) { error in
+                    if let error = error {
+                        let errorMsg = "Error updating license image: \(error.localizedDescription)"
+                        print("❌ \(errorMsg)")
+                        completion?(false, errorMsg)
+                    } else {
+                        print("✅ User license image updated successfully")
+                        completion?(true, "License image updated successfully")
+                    }
+                }
+            }
     }
 }
