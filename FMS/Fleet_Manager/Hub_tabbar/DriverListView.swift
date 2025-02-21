@@ -10,16 +10,18 @@ import FirebaseFirestore
 
 struct DriverListView: View {
     @State private var searchText = ""
-    @State var users: [User] = []
+    @State var users: [Driver] = []
     @State private var showDeleteSuccessAlert = false
     @State private var showDeleteConfirmation = false
-    @State private var userToDelete: User?
+    @State private var userToDelete: Driver?
+    @State private var isLoading = true
     @State private var selectedUserID: String?
+    @State private var errorMessage: String?
     @State private var offsets: [String: CGFloat] = [:]  // Store offsets per user ID
     
     let db = Firestore.firestore()
     
-    var filteredUsers: [User] {
+    var filteredUsers: [Driver] {
         if searchText.isEmpty {
             return users
         } else {
@@ -28,127 +30,140 @@ struct DriverListView: View {
     }
     
     var body: some View {
-//        NavigationStack {
-            VStack {
-                VStack{
-                    TextField("Search", text: $searchText)
-                        .padding(10)
-                        .background(Color.white)
-                        .cornerRadius(10)
-                        .padding(.horizontal)
-                }.padding(.top,70)
-                
-                ScrollView {
-                    
-                    VStack(spacing: 0) {
-                        ForEach(filteredUsers, id: \.id) { user in
-                            ZStack {
-                                // Background delete button
-                                HStack {
-                                    Spacer()
-                                    Button {
-                                        // Trigger confirmation before deleting
-                                        userToDelete = user
-                                        showDeleteConfirmation = true
-                                    } label: {
-                                        Image(systemName: "trash")
-                                            .foregroundColor(.red)
-                                    }
-                                    .padding(.trailing, 20)
+        VStack {
+            TextField("Search", text: $searchText)
+                .padding(10)
+                .background(Color.white)
+                .cornerRadius(10)
+                .padding(.horizontal)
+                .padding(.top, 70)
+            
+            ScrollView {
+                VStack(spacing: 0) {
+                    ForEach(filteredUsers, id: \.id) { user in
+                        ZStack {
+                            // Background delete button
+                            HStack {
+                                Spacer()
+                                Button {
+                                    userToDelete = user
+                                    showDeleteConfirmation = true
+                                } label: {
+                                    Image(systemName: "trash")
+                                        .foregroundColor(.red)
                                 }
-                                
-                                // User Row with swipe gesture
-                                DriverRow(user: user)
-                                    .cornerRadius(15)
-                                    .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 5)
-                                    .offset(x: offsets[user.id ?? ""] ?? 0)
-                                    .gesture(
-                                        DragGesture()
-                                            .onChanged { gesture in
-                                                if gesture.translation.width < 0 {
-                                                    offsets[user.id ?? ""] = gesture.translation.width
-                                                }
-                                            }
-                                            .onEnded { _ in
-                                                if (offsets[user.id ?? ""] ?? 0) < -100 {
-                                                    withAnimation {
-                                                        for key in offsets.keys {
-                                                            if key != user.id {
-                                                                offsets[key] = 0
-                                                            }
-                                                        }
-                                                        offsets[user.id ?? ""] = -100
-                                                    }
-                                                } else {
-                                                    withAnimation {
-                                                        offsets[user.id ?? ""] = 0
-                                                    }
-                                                }
-                                            }
-                                    )
-                                    .onTapGesture {
-                                        selectedUserID = user.id
-                                    }
-                                
-                                // Invisible NavigationLink for details
-                                NavigationLink(
-                                    destination: DriverDetails(user: user),
-                                    tag: user.id ?? "",
-                                    selection: $selectedUserID,
-                                    label: { EmptyView() }
-                                )
-                                .opacity(0)
+                                .padding(.trailing, 20)
                             }
-                            .frame(height: 160)
+                            
+                            // User Row with swipe gesture
+                            DriverRow(user: user)
+                                .cornerRadius(15)
+                                .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 5)
+                                .offset(x: offsets[user.id ?? ""] ?? 0)
+                                .gesture(
+                                    DragGesture()
+                                        .onChanged { gesture in
+                                            if gesture.translation.width < 0 {
+                                                offsets[user.id ?? ""] = gesture.translation.width
+                                            }
+                                        }
+                                        .onEnded { _ in
+                                            if (offsets[user.id ?? ""] ?? 0) < -100 {
+                                                withAnimation {
+                                                    for key in offsets.keys {
+                                                        if key != user.id {
+                                                            offsets[key] = 0
+                                                        }
+                                                    }
+                                                    offsets[user.id ?? ""] = -100
+                                                }
+                                            } else {
+                                                withAnimation {
+                                                    offsets[user.id ?? ""] = 0
+                                                }
+                                            }
+                                        }
+                                )
+                                .onTapGesture {
+                                    selectedUserID = user.id
+                                }
+                            
+                            // NavigationLink for details
+                            NavigationLink(
+                                destination: DriverDetails(user: user),
+                                tag: user.id ?? "",
+                                selection: $selectedUserID,
+                                label: { EmptyView() }
+                            )
+                            .opacity(0)
                         }
+                        .frame(height: 160)
                     }
-                    .padding(.horizontal)
-                    .padding(.top, 20)
                 }
+                .padding(.horizontal)
+                .padding(.top, 20)
             }
-            .navigationTitle("Drivers")
-            .navigationBarTitleDisplayMode(.inline)
-            .background(Color(.systemGray6))
-//            .padding(.top, 40)
-            .onAppear(perform: fetchUsersDriver)
-            .alert(isPresented: $showDeleteSuccessAlert) {
-                Alert(
-                    title: Text("Success"),
-                    message: Text("User deleted successfully."),
-                    dismissButton: .default(Text("OK"))
-                )
-            }
-            .alert(isPresented: $showDeleteConfirmation) {
-                Alert(
-                    title: Text("Confirm Delete"),
-                    message: Text("Are you sure you want to delete this driver?"),
-                    primaryButton: .destructive(Text("Delete")) {
-                        if let user = userToDelete {
-                            deleteUser(user)
-                        }
-                    },
-                    secondaryButton: .cancel()
-                )
-            }
-//            .navigationTitle("Drivers")
-//            .navigationBarTitleDisplayMode(.inline)
-//            .background(Color(.systemGray6))
-//        }
+        }
+        .navigationTitle("Drivers")
+        .navigationBarTitleDisplayMode(.inline)
+        .background(Color(.systemGray6))
+        .onAppear(perform: fetchDrivers)
+        .alert(isPresented: $showDeleteSuccessAlert) {
+            Alert(
+                title: Text("Success"),
+                message: Text("User deleted successfully."),
+                dismissButton: .default(Text("OK"))
+            )
+        }
+        .alert(isPresented: $showDeleteConfirmation) {
+            Alert(
+                title: Text("Confirm Delete"),
+                message: Text("Are you sure you want to delete this driver?"),
+                primaryButton: .destructive(Text("Delete")) {
+                    if let user = userToDelete {
+                        deleteUser(user)
+                    }
+                },
+                secondaryButton: .cancel()
+            )
+        }
     }
     
-    func fetchUsersDriver() {
-         db.collection("users").whereField("role", isEqualTo: "Driver").getDocuments { snapshot, error in
-             guard let documents = snapshot?.documents, error == nil else {
-                 print("Error fetching users: \(error?.localizedDescription ?? "Unknown error")")
-                 return
-             }
-             self.users = documents.compactMap { doc in
-                 let user = try? doc.data(as: User.self)
-                 return user?.id != nil ? user : nil
-             }
-         }
-     }
-    func deleteUser(_ user: User) {
+    func fetchDrivers() {
+        db.collection("users").whereField("role", isEqualTo: "Driver").getDocuments { snapshot, error in
+            if let error = error {
+                DispatchQueue.main.async {
+                    self.errorMessage = "Error fetching drivers: \(error.localizedDescription)"
+                    self.isLoading = false
+                }
+                return
+            }
+            
+            guard let snapshot = snapshot else {
+                DispatchQueue.main.async {
+                    self.errorMessage = "No drivers found."
+                    self.isLoading = false
+                }
+                return
+            }
+            
+            let drivers = snapshot.documents.compactMap { document -> Driver? in
+                do {
+                    return try document.data(as: Driver.self)
+                } catch {
+                    print("Error decoding driver: \(error)")
+                    return nil
+                }
+            }
+            
+            DispatchQueue.main.async {
+                self.users = drivers
+                self.isLoading = false
+            }
+        }
+    }
+    
+    func deleteUser(_ user: Driver) {
         guard let userId = user.id else {
             print("User ID is nil, cannot delete.")
             return
@@ -168,8 +183,8 @@ struct DriverListView: View {
 }
 
 struct DriverRow: View {
-    let user: User
-
+    let user: Driver
+    
     var body: some View {
         VStack(alignment: .leading) {
             HStack {
@@ -192,13 +207,14 @@ struct DriverRow: View {
             
             HStack {
                 VStack(alignment: .leading) {
-                    Text("Experience: \(user.name) years")
+                    Text("Experience: \(user.experience) years")
                         .font(.system(size: 14))
                         .foregroundColor(.gray)
                     
-                    Text("Terrain: \(user.role)")
+                    Text("Terrain: \(user.geoPreference)")
                         .font(.system(size: 14))
                         .foregroundColor(.gray)
+                    Text("status : \(user.status)")
                 }
                 
                 Spacer()
@@ -215,14 +231,12 @@ struct DriverRow: View {
 
 
 
-
-
 //import SwiftUI
 //import FirebaseFirestore
 //
 //struct DriverListView: View {
 //    @State private var searchText = ""
-//    @State var users: [User] = []
+//    @State var users: [Driver] = []
 //    @State private var showAlert = false
 //    @State private var showDeleteSuccessAlert = false
 //    @State private var userToDelete: User?
@@ -262,7 +276,7 @@ struct DriverRow: View {
 //            ScrollView {
 //                ForEach(filteredUsers, id: \.id) { user in
 //                    NavigationLink(destination: DriverDetails(user: user)) {
-//                        DriverRow(user: user)
+//                        DriverRow(user: user as! Driver)
 //
 //                    }
 //                }
@@ -320,7 +334,7 @@ struct DriverRow: View {
 //            }
 //            self.users = documents.compactMap { doc in
 //                let user = try? doc.data(as: User.self)
-//                return user?.id != nil ? user : nil
+//                return user?.id != nil ? user : nil as! Driver as! Driver
 //            }
 //        }
 //    }
@@ -352,7 +366,7 @@ struct DriverRow: View {
 //    }
 //}
 //struct DriverRow: View {
-//    let user: User
+//    let user: Driver
 //
 //    var body: some View {
 //            HStack {

@@ -20,22 +20,22 @@ struct UserListView: View {
             }
             .padding()
         }
-        .onAppear(perform: fetchUsersMP)
+        .onAppear(perform: fetchDrivers)
         .navigationTitle("Drivers")
     }
     
-    private func fetchUsersDriver() {
+    private func fetchDrivers() {
         db.collection("users").whereField("role", isEqualTo: "Driver").getDocuments { snapshot, error in
             guard let documents = snapshot?.documents, error == nil else {
-                print("Error fetching users: \(error?.localizedDescription ?? "Unknown error")")
+                print("Error fetching drivers: \(error?.localizedDescription ?? "Unknown error")")
                 return
             }
             self.users = documents.compactMap { doc in
-                let user = try? doc.data(as: User.self)
-                return (user?.id != nil) ? user : nil
+                try? doc.data(as: Driver.self)  // Decode as Driver
             }
         }
     }
+
     
     private func fetchUsersFleetManager() {
         db.collection("users").whereField("role", isEqualTo: "Fleet Manager").getDocuments { snapshot, error in

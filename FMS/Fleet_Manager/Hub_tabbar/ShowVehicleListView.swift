@@ -258,11 +258,12 @@ struct ShowVehicleListView: View {
                 }
                 .listStyle(PlainListStyle())
             }
-        }
+        }.padding(.top,70)
         .onAppear {
             fetchVehicles()
         }
         .navigationTitle("Vehicle List")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 
