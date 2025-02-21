@@ -78,6 +78,7 @@ class Driver: User {
     var status: Bool
     var upcomingTrip: Trip?
 
+
     init(name: String, email: String, phone: String, experience: Experience, license: String, geoPreference: GeoPreference, vehiclePreference: VehicleType, status: Bool) {
           self.experience = experience
           self.license = license
