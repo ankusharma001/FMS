@@ -2,22 +2,75 @@ import SwiftUI
 import _PhotosUI_SwiftUI
 import FirebaseFirestore
 
-struct DriverDetails: View {
-    let user: User
-
+struct DriverImageLoader: View {
+    let imageUrl: String?
+    
     var body: some View {
-        AddDriverView(user: user)
+        if let imageUrl = imageUrl, let url = URL(string: imageUrl), !imageUrl.isEmpty {
+            AsyncImage(url: url) { phase in
+                switch phase {
+                case .empty:
+                    ProgressView()
+                        .onAppear {
+                            print("📷 Loading image...")
+                        }
+                case .success(let image):
+                    image.resizable()
+                        .scaledToFit()
+                        .frame(height: 220)
+                        .cornerRadius(15)
+                        .onAppear {
+                            print("✅ Successfully loaded image")
+                        }
+                case .failure(let error):
+                    placeholderImage
+                        .onAppear {
+                            print("❌ Failed to load image: \(error.localizedDescription)")
+                        }
+                @unknown default:
+                    EmptyView()
+                }
+            }
+            .onAppear {
+                print("📷 Attempting to load image from URL: \(imageUrl)")
+            }
+            .padding(.horizontal)
+        } else {
+            placeholderImage
+                .onAppear {
+                    print("⚠️ No valid image URL provided: \(imageUrl ?? "nil")")
+                }
+        }
+    }
+    
+    private var placeholderImage: some View {
+        Image(systemName: "photo.fill")
+            .resizable()
+            .scaledToFit()
+            .frame(height: 220)
+            .foregroundColor(.gray)
+            .opacity(0.5)
+            .padding(.horizontal)
     }
 }
 
+struct DriverDetails: View {
+    let driver: Driver // Change from User to Driver
+
+       var body: some View {
+           AddDriverView(user: driver) // Pass driver instead of user
+       }
+}
+
 struct AddDriverView: View {
-    let user: User
+    let user: Driver
 
     @State private var name: String
     @State private var email: String
     @State private var contactNumber: String
     @State private var licenseNumber: String = ""
     @State private var experience: String = ""
+    @State private var licenseImageURL: String
     @State private var selectedVehicle: String = "Truck"
     @State private var selectedTerrain: String = "Hilly"
 
@@ -53,12 +106,16 @@ struct AddDriverView: View {
 
     private let db = Firestore.firestore()
 
-    init(user: User) {
-        self.user = user
-        _name = State(initialValue: user.name)
-        _email = State(initialValue: user.email)
-        _contactNumber = State(initialValue: user.phone)
-    }
+    init(user: Driver) {
+            self.user = user
+            _name = State(initialValue: user.name)
+            _email = State(initialValue: user.email)
+            _contactNumber = State(initialValue: user.phone)
+            _licenseImageURL = State(initialValue: user.license) 
+        _selectedVehicle = State(initialValue: user.vehiclePreference.rawValue)
+        _selectedTerrain = State(initialValue: user.geoPreference.rawValue)
+        }
+
     
     func validateContactNumber(_ input: String) {
            // Ensure the input only contains numbers and limit the length to 10 digits
@@ -83,150 +140,147 @@ struct AddDriverView: View {
            let predicate = NSPredicate(format: "SELF MATCHES %@", emailRegex)
            isInvalidEmail = !predicate.evaluate(with: input)
        }
+    func DrivergetFormattedImageUrl(_ rawUrl: String?) -> String? {
+        guard let rawUrl = rawUrl, !rawUrl.isEmpty else {
+            print("⚠️ Empty or nil image URL")
+            return nil
+        }
+        
+        // If the URL doesn't start with http or https, it might be a Firebase Storage reference
+        if !rawUrl.hasPrefix("http") {
+            // Assuming you're using Firebase Storage, construct the proper URL
+            // Adjust the bucket URL according to your Firebase project
+            let storageUrl = "https://firebasestorage.googleapis.com/v0/b/YOUR-FIREBASE-PROJECT.appspot.com/o/"
+            let encodedPath = rawUrl.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? rawUrl
+            return "\(storageUrl)\(encodedPath)?alt=media"
+        }
+        
+        return rawUrl
+    }
+    
 
     var body: some View {
         Form {
             Section(header: Text("Name")) {
-                           TextField("Enter Name", text: $name)
-                               .textFieldStyle(RoundedBorderTextFieldStyle())
-                               .disabled(!isEditing)
-                               .onChange(of: name) { newValue in
-                                   validateName(newValue)
-                               }
-                           
-                           if isInvalidName {
-                               Text("Invalid Name. Only letters and spaces allowed.")
-                                   .foregroundColor(.red)
-                                   .font(.caption)
-                           }
-                       }
-
+                TextField("Enter Name", text: $name)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .disabled(!isEditing)
+                    .onChange(of: name) { newValue in
+                        validateName(newValue)
+                    }
+                
+                if isInvalidName {
+                    Text("Invalid Name. Only letters and spaces allowed.")
+                        .foregroundColor(.red)
+                        .font(.caption)
+                }
+            }
+            
             Section(header: Text("Email")) {
-                            TextField("Enter Email", text: $email)
-                                .disabled(!isEditing)
-                                .textFieldStyle(RoundedBorderTextFieldStyle())
-                                .keyboardType(.emailAddress)
-                                .autocapitalization(.none)
-                                .onChange(of: email) { newValue in
-                                    validateEmail(newValue)
-                                }
-
-                            if isInvalidEmail {
-                                Text("Invalid Email Address")
-                                    .foregroundColor(.red)
-                                    .font(.caption)
-                            }
-                        }
-
+                TextField("Enter Email", text: $email)
+                    .disabled(!isEditing)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .keyboardType(.emailAddress)
+                    .autocapitalization(.none)
+                    .onChange(of: email) { newValue in
+                        validateEmail(newValue)
+                    }
+                
+                if isInvalidEmail {
+                    Text("Invalid Email Address")
+                        .foregroundColor(.red)
+                        .font(.caption)
+                }
+            }
+            
             Section(header: Text("Contact Number")) {
-                           TextField("Enter Contact Number", text: $contactNumber)
-                               .textFieldStyle(RoundedBorderTextFieldStyle())
-                               .disabled(!isEditing)
-                               .keyboardType(.numberPad)
-                               .onChange(of: contactNumber) { newValue in
-                                   validateContactNumber(newValue)
-                               }
-                           
-                           if isInvalidContactNumber {
-                               Text("Invalid Contact Number")
-                                   .foregroundColor(.red)
-                                   .font(.caption)
-                           }
-                       }
-
-//            Section(header: Text("License Number")) {
-//                TextField("Enter License Number", text: $licenseNumber)
-//                    .textFieldStyle(RoundedBorderTextFieldStyle())
-//                    .disabled(!isEditing)
-//            }
-
+                TextField("Enter Contact Number", text: $contactNumber)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .disabled(!isEditing)
+                    .keyboardType(.numberPad)
+                    .onChange(of: contactNumber) { newValue in
+                        validateContactNumber(newValue)
+                    }
+                
+                if isInvalidContactNumber {
+                    Text("Invalid Contact Number")
+                        .foregroundColor(.red)
+                        .font(.caption)
+                }
+            }
+            
+            //            Section(header: Text("License Number")) {
+            //                TextField("Enter License Number", text: $licenseNumber)
+            //                    .textFieldStyle(RoundedBorderTextFieldStyle())
+            //                    .disabled(!isEditing)
+            //            }
+            
             Section(header: Text("License Photo")) {
-                ZStack {
-                    if let image = licenseImage {
-                        Image(uiImage: image)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(height: 150)
-                            .cornerRadius(10)
-                    } else {
-                        RoundedRectangle(cornerRadius: 10)
-                            .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [5]))
-                            .frame(height: 150)
-                            .overlay(
-                                VStack {
-                                    Image(systemName: "camera")
-                                        .resizable()
-                                        .scaledToFit()
-                                        .frame(width: 40, height: 40)
-                                        .foregroundColor(.gray)
-                                    Text("Tap to upload")
-                                        .font(.caption)
-                                        .foregroundColor(.gray)
-                                }
-                            )
-                    }
+                           ZStack {
+                               DriverImageLoader(imageUrl: licenseImageURL)
+                                   .onTapGesture {
+                                       showImagePicker.toggle()
+                                   }
+                           }
+                           .disabled(!isEditing)
+                       }
+                
+                Section(header: Text("Type of Vehicle")) {
+                    TextField("Enter Vehicle Type", text: $selectedVehicle)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .disabled(!isEditing)
                 }
-                .onTapGesture {
-                    showImagePicker.toggle()
-                }
-            }.disabled(!isEditing)
-
-            Section(header: Text("Type of Vehicle")) {
-                TextField("Enter Vehicle Type", text: $selectedVehicle)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .disabled(!isEditing)
-            }
-
-            Section(header: Text("Specialization in Terrain Type")) {
-                TextField("Enter Terrain Type", text: $selectedTerrain)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .disabled(!isEditing)
-            }
-        }
-        .photosPicker(
-            isPresented: $showImagePicker,
-            selection: $selectedImageItem,
-            matching: .images
-        )
-        .onChange(of: selectedImageItem) { newItem in
-            Task {
-                if let newItem = newItem, let data = try? await newItem.loadTransferable(type: Data.self) {
-                    if let uiImage = UIImage(data: data) {
-                        licenseImage = uiImage
-                    }
+                
+                Section(header: Text("Specialization in Terrain Type")) {
+                    TextField("Enter Terrain Type", text: $selectedTerrain)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .disabled(!isEditing)
                 }
             }
-        }
-        .navigationBarTitle("Driver Details", displayMode: .inline)
-        .navigationBarItems(
-                  trailing: Button(isEditing ? "Done" : "Edit") {
-                      if isEditing {
-                          if hasChanges {
-                              showAlert = true
-                          } else {
-                              isEditing = false
-                          }
-                      } else {
-                          isEditing = true
-                          saveInitialValues()
-                      }
-                  }.disabled(isEditing && !hasChanges)
-        )
-        .alert(isPresented: $showAlert) {
-            Alert(
-                title: Text("Confirm Changes"),
-                message: Text("Are you sure you want to save the changes?"),
-                primaryButton: .default(Text("Yes"), action: {
-                    updateDriverDetails()
-                    isEditing = false
-                }),
-                secondaryButton: .cancel(Text("No"))
+            .photosPicker(
+                isPresented: $showImagePicker,
+                selection: $selectedImageItem,
+                matching: .images
             )
+            .onChange(of: selectedImageItem) { newItem in
+                Task {
+                    if let newItem = newItem, let data = try? await newItem.loadTransferable(type: Data.self) {
+                        if let uiImage = UIImage(data: data) {
+                            licenseImage = uiImage
+                        }
+                    }
+                }
+            }
+            //        .navigationBarTitle("Driver Details", displayMode: .inline)
+            .navigationBarItems(
+                trailing: Button(isEditing ? "Done" : "Edit") {
+                    if isEditing {
+                        if hasChanges {
+                            showAlert = true
+                        } else {
+                            isEditing = false
+                        }
+                    } else {
+                        isEditing = true
+                        saveInitialValues()
+                    }
+                }.disabled(isEditing && !hasChanges)
+            )
+            .alert(isPresented: $showAlert) {
+                Alert(
+                    title: Text("Confirm Changes"),
+                    message: Text("Are you sure you want to save the changes?"),
+                    primaryButton: .default(Text("Yes"), action: {
+                        updateDriverDetails()
+                        isEditing = false
+                    }),
+                    secondaryButton: .cancel(Text("No"))
+                )
+            }
+            
+            
         }
-        
-      
-    }
-    func saveInitialValues() {
+        func saveInitialValues() {
             initialName = name
             initialEmail = email
             initialContactNumber = contactNumber
@@ -235,37 +289,43 @@ struct AddDriverView: View {
             initialTerrain = selectedTerrain
             initialLicenseImage = licenseImage
         }
-
-    /// Updates driver details in Firestore
-    private func updateDriverDetails() {
-        guard let userId = user.id else { return }
-
-        let driverData: [String: Any] = [
-            "name": name,
-            "email": email,
-            "phone": contactNumber,
-            "licenseNumber": licenseNumber,
-            "selectedVehicle": selectedVehicle,
-            "selectedTerrain": selectedTerrain
-        ]
-
-        db.collection("users").document(userId).updateData(driverData) { error in
-            if let error = error {
-                print("Error updating driver details: \(error.localizedDescription)")
-            } else {
-                print("Driver details updated successfully")
+        
+        /// Updates driver details in Firestore
+       func updateDriverDetails() {
+            guard let userId = user.id else { return }
+            
+            let driverData: [String: Any] = [
+                "name": name,
+                "email": email,
+                "phone": contactNumber,
+                "licenseNumber": licenseNumber,
+                "selectedVehicle": selectedVehicle,
+                "selectedTerrain": selectedTerrain
+            ]
+            
+            db.collection("users").document(userId).updateData(driverData) { error in
+                if let error = error {
+                    print("Error updating driver details: \(error.localizedDescription)")
+                } else {
+                    print("Driver details updated successfully")
+                }
             }
         }
     }
-}
+
 
 #Preview {
     NavigationView {
-        DriverDetails(user: User(
+        DriverDetails(driver: Driver(
             name: "John Doe",
             email: "john.doe@example.com",
             phone: "1234567890",
-            role: .driver
+            experience: .lessThanFive,
+
+            license: "photo",
+            geoPreference: .hilly,
+            vehiclePreference: .car,
+            status: true
         ))
     }
 }

@@ -168,13 +168,20 @@ struct AddNewVehicle: View {
     }
     
     func validateRegistrationNumber(_ input: String) {
-           let numberCharacterSet = CharacterSet.decimalDigits
-           if input.rangeOfCharacter(from: numberCharacterSet.inverted) != nil {
-               isInvalidRegistration = true
-           } else {
-               isInvalidRegistration = false
-           }
-       }
+        // Ensure input is capitalized
+        let uppercaseInput = input.uppercased()
+
+        // Limit input to 10 characters
+        if uppercaseInput.count > 10 {
+            registrationNumber = String(uppercaseInput.prefix(10)) // Trim to 10 characters
+            isInvalidRegistration = true
+        } else {
+            registrationNumber = uppercaseInput
+            isInvalidRegistration = false
+        }
+    }
+
+
 
        func validateMileage(_ input: String) {
            let numberCharacterSet = CharacterSet.decimalDigits
@@ -227,7 +234,7 @@ struct AddNewVehicle: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button("Save") { saveVehicle() }.foregroundColor(.blue).disabled(!isSaveEnabled)
+                Button("Create") { saveVehicle() }.foregroundColor(.blue).disabled(!isSaveEnabled)
                     .opacity((!isSaveEnabled) ? 0.5 : 1)
             }
         }

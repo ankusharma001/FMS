@@ -4,55 +4,55 @@
 //
 //  Created by Deepankar Garg on 17/02/25.
 //
-
 import SwiftUI
 import FirebaseFirestore
 
 struct ShowVehicleListView: View {
-    // State variable to hold the list of vehicles
+   
     @State private var vehicles: [Vehicle] = []
     @State private var isLoading = true
     @State private var errorMessage: String?
     @State private var searchText = ""
     @State private var selectedVehicleType: VehicleType?
+    @State private var selectedFuelType: FuelType?
+    @State private var selectedStatus: Bool? // New state for filtering by status
 
-    // Computed property for filtered vehicles
-        private var filteredVehicles: [Vehicle] {
-            var filtered = vehicles
-            
-            // Apply search filter
-            if !searchText.isEmpty {
-                filtered = filtered.filter { vehicle in
-                    vehicle.model.localizedCaseInsensitiveContains(searchText)
-                }
+    private var filteredVehicles: [Vehicle] {
+        var filtered = vehicles
+        
+        if !searchText.isEmpty {
+            filtered = filtered.filter { vehicle in
+                vehicle.model.localizedCaseInsensitiveContains(searchText)
             }
-            
-            // Apply type filter
-            if let selectedType = selectedVehicleType {
-                filtered = filtered.filter { vehicle in
-                    vehicle.type == selectedType
-                }
-            }
-            
-            return filtered
         }
-    
-    // Fetch vehicles from Firestore when the view appears
+        
+        if let selectedType = selectedVehicleType {
+            filtered = filtered.filter { $0.type == selectedType }
+        }
+        
+        if let selectedFuel = selectedFuelType {
+            filtered = filtered.filter { $0.fuelType == selectedFuel }
+        }
+        
+        if let status = selectedStatus {
+            filtered = filtered.filter { $0.status == status }
+        }
+        
+        return filtered
+    }
+
     func fetchVehicles() {
         let db = Firestore.firestore()
         db.collection("vehicles").getDocuments { snapshot, error in
             if let error = error {
-                // Handle error by updating errorMessage state
                 DispatchQueue.main.async {
                     self.errorMessage = "Error fetching vehicles: \(error.localizedDescription)"
                     self.isLoading = false
                 }
-                print("Error fetching vehicles: \(error)")
                 return
             }
             
             guard let snapshot = snapshot else {
-                // Handle case where snapshot is nil
                 DispatchQueue.main.async {
                     self.errorMessage = "No vehicles found."
                     self.isLoading = false
@@ -62,89 +62,176 @@ struct ShowVehicleListView: View {
             
             let vehicles = snapshot.documents.compactMap { document -> Vehicle? in
                 do {
-                    let vehicleData = try document.data(as: Vehicle.self)
-                    return vehicleData
+                    return try document.data(as: Vehicle.self)
                 } catch {
                     print("Error decoding vehicle: \(error)")
                     return nil
                 }
             }
             
-            // Update state with the fetched vehicles
             DispatchQueue.main.async {
                 self.vehicles = vehicles
                 self.isLoading = false
             }
         }
     }
+    private var fuelfilterPicker: some View {
+           Menu {
+               // Option to show all fuel types
+               Button(action: { selectedFuelType = nil }) {
+                   HStack {
+                       Text("All Fuel Types")
+                       if selectedFuelType == nil {
+                           Image(systemName: "checkmark")
+                       }
+                   }
+               }
+               
+               // Filter options for each fuel type
+               ForEach(FuelType.allCases, id: \.self) { fuel in
+                   Button(action: { selectedFuelType = fuel }) {
+                       HStack {
+                           Text(fuel.rawValue)
+                           if selectedFuelType == fuel {
+                               Image(systemName: "checkmark")
+                           }
+                       }
+                   }
+               }
+           } label: {
+               HStack {
+                   Image(systemName: "fuelpump.fill" )
+                       .foregroundColor(.red)
+                   
+                   Text(selectedFuelType?.rawValue ?? " ")
+                       .foregroundColor(.black)
+                   Image(systemName: "chevron.down")
+                       .foregroundColor(.gray)
+               }
+               .padding(7)
+               .background(Color.white.opacity(0.1))
+               .overlay(
+                   RoundedRectangle(cornerRadius: 8)
+                       .stroke(Color.blue, lineWidth: 2) // 20 is the border width
+               )
+               .cornerRadius(8)
 
-    private var filterPicker: some View {
-            Menu {
-                Button(action: { selectedVehicleType = nil }) {
-                    HStack {
-                        Text("All Types")
-                        if selectedVehicleType == nil {
-                            Image(systemName: "checkmark")
-                        }
-                    }
-                }
-                
-                ForEach(VehicleType.allCases, id: \.self) { type in
-                    Button(action: { selectedVehicleType = type }) {
-                        HStack {
-                            Text(type.rawValue)
-                            if selectedVehicleType == type {
-                                Image(systemName: "checkmark")
-                            }
-                        }
-                    }
-                }
-            } label: {
+           }
+       }
+
+       private var filterPicker: some View {
+           Menu {
+               Button(action: { selectedVehicleType = nil }) {
+                   HStack {
+                       Text("vehicle")
+                       if selectedVehicleType == nil {
+                           Image(systemName: "checkmark")
+                       }
+                   }
+               }
+               
+               ForEach(VehicleType.allCases, id: \.self) { type in
+                   Button(action: { selectedVehicleType = type }) {
+                       HStack {
+                           Text(type.rawValue)
+                           if selectedVehicleType == type {
+                               Image(systemName: "checkmark")
+                           }
+                       }
+                   }
+               }
+           } label: {
+               HStack {
+                   Image(systemName: "truck.box.fill")
+                       .foregroundColor(.black)
+                   Text(selectedVehicleType?.rawValue ?? "")
+                       .foregroundColor(.black)
+                   Image(systemName: "chevron.down")
+                       .foregroundColor(.gray)
+               }
+               .padding(7)
+               .background(Color.white.opacity(0.1))
+               .overlay(
+                   RoundedRectangle(cornerRadius: 8)
+                       .stroke(Color.blue, lineWidth: 2) // 20 is the border width
+               )
+               .cornerRadius(8)
+           }
+       }
+       
+
+    private var statusFilterPicker: some View {
+        Menu {
+            Button(action: { selectedStatus = nil }) {
                 HStack {
-                    Image(systemName: "line.3.horizontal.decrease.circle")
-                        .foregroundColor(.blue)
-                    Text(selectedVehicleType?.rawValue ?? "Filter")
-                        .foregroundColor(.blue)
+                    Text("All Status")
+                    if selectedStatus == nil { Image(systemName: "checkmark") }
                 }
-                .padding(8)
-                .background(Color.blue.opacity(0.1))
-                .cornerRadius(8)
             }
+            Button(action: { selectedStatus = true }) {
+                HStack {
+                    Text("Active")
+                    if selectedStatus == true { Image(systemName: "checkmark") }
+                }
+            }
+            Button(action: { selectedStatus = false }) {
+                HStack {
+                    Text("Inactive")
+                    if selectedStatus == false { Image(systemName: "checkmark") }
+                }
+            }
+        } label: {
+            HStack {
+                Image(systemName: "power.circle.fill")
+                    .foregroundColor(.green)
+                Text(selectedStatus == nil ? "" : (selectedStatus! ? "Active" : "Inactive"))
+                    .foregroundColor(.black)
+                Image(systemName: "chevron.down")
+                    .foregroundColor(.gray)
+            }
+            .padding(7)
+            .background(Color.white.opacity(0.1))
+            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.blue, lineWidth: 2))
+            .cornerRadius(8)
         }
-    
-    // Load data when the view appears
+    }
+
     var body: some View {
         VStack {
             if isLoading {
-                // Show a loading indicator while fetching
                 ProgressView("Loading...")
                     .progressViewStyle(CircularProgressViewStyle())
             } else if let errorMessage = errorMessage {
-                // Display an error message if fetching fails
                 Text(errorMessage)
                     .foregroundColor(.red)
                     .padding()
             } else {
-                
-                HStack {
-                        SearchBar(text: $searchText)
+                VStack {
+                    SearchBar(text: $searchText)
+                    
+                    HStack {
                         filterPicker
-                      }
+                        Spacer()
+                        fuelfilterPicker
+                        Spacer()
+                        statusFilterPicker
+                    }
                     .padding(.horizontal)
+//                    .padding(.top, 20)
+                    .padding(.bottom, 20)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                }
+                .padding(.horizontal)
                 
-                // Display the list of vehicles once data is fetched
                 List(filteredVehicles, id: \.id) { vehicle in
                     NavigationLink(destination: VehicleDetailsView(vehicle: vehicle)) {
                         HStack {
-                            // Truck Icon - Ensures Proper Display
                             Image(systemName: "truck.box.fill")
-                                .resizable() // Allows resizing
-                                .scaledToFit() // Ensures it maintains aspect ratio
-                                .frame(width: 40, height: 40) // Sets fixed size
-//                                .foregroundColor(.gray)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 40, height: 40)
                                 .padding(.leading, 8)
 
-                            // Vehicle Details
                             VStack(alignment: .leading) {
                                 Text(vehicle.model)
                                     .foregroundColor(.black)
@@ -156,37 +243,28 @@ struct ShowVehicleListView: View {
                             .padding(.vertical, 5)
 
                             Spacer()
-//                            Text(vehicle.status)
-                            HStack{
-                                
+
+                            HStack {
                                 Circle()
                                     .fill(vehicle.status ? Color.green : Color.red)
                                     .frame(width: 8, height: 8)
-                                if vehicle.status {
-                                    Text("Active")
-                                        .foregroundColor(Color.green)
-                                } else {
-                                    Text("Inactive")
-                                        .foregroundColor(Color.green)
-                                }
+                                Text(vehicle.status ? "Active" : "Inactive")
+                                    .foregroundColor(vehicle.status ? .green : .red)
                             }
-
-                         
                         }
                         .padding()
                         .background(Color.white)
                         .cornerRadius(10)
-
                     }
                 }
-                .listStyle(PlainListStyle()) // Removes default List styling
-
+                .listStyle(PlainListStyle())
             }
-        }
+        }.padding(.top,20)
         .onAppear {
             fetchVehicles()
         }
         .navigationTitle("Vehicle List")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 
@@ -202,9 +280,7 @@ struct SearchBar: View {
                 .textFieldStyle(RoundedBorderTextFieldStyle())
             
             if !text.isEmpty {
-                Button(action: {
-                    text = ""
-                }) {
+                Button(action: { text = "" }) {
                     Image(systemName: "xmark.circle.fill")
                         .foregroundColor(.gray)
                 }
@@ -212,7 +288,6 @@ struct SearchBar: View {
         }
     }
 }
-
 
 #Preview {
     ShowVehicleListView()
