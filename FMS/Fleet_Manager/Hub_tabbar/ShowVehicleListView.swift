@@ -8,6 +8,7 @@ import SwiftUI
 import FirebaseFirestore
 
 struct ShowVehicleListView: View {
+   
     @State private var vehicles: [Vehicle] = []
     @State private var isLoading = true
     @State private var errorMessage: String?
@@ -216,7 +217,7 @@ struct ShowVehicleListView: View {
                         statusFilterPicker
                     }
                     .padding(.horizontal)
-                    .padding(.top, 20)
+//                    .padding(.top, 20)
                     .padding(.bottom, 20)
                     .frame(maxWidth: .infinity, alignment: .trailing)
                 }
@@ -258,7 +259,7 @@ struct ShowVehicleListView: View {
                 }
                 .listStyle(PlainListStyle())
             }
-        }.padding(.top,70)
+        }.padding(.top,20)
         .onAppear {
             fetchVehicles()
         }

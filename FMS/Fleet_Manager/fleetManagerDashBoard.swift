@@ -54,7 +54,9 @@ struct FleetControlDashboard: View {
 }
 
 struct DashboardView: View {
-    var trips = generateExampleTrips()
+    var trip = generateExampleTrips()
+   
+    @State private var trips: [Trip] = []
     
 
     // Counts fetched from Firestore
@@ -118,6 +120,7 @@ struct DashboardView: View {
                 fetchVehicleCount()
                 fetchMaintenanceCount()
                 fetchActiveTripsCount()
+                fetchTrips() 
             }
         }
     }
@@ -136,6 +139,7 @@ struct DashboardView: View {
             print("Total number of drivers: \(driverCount)")
         }
     }
+
     
     func fetchVehicleCount() {
         db.collection("vehicles").getDocuments { snapshot, error in
@@ -177,6 +181,22 @@ struct DashboardView: View {
                 self.activeTripsCount = snapshot?.documents.count ?? 0
             }
             print("Total number of active trips: \(self.activeTripsCount)")
+        }
+    }
+    private func fetchTrips() {
+        db.collection("trips").getDocuments { snapshot, error in
+            guard let documents = snapshot?.documents, error == nil else {
+                print("Error fetching trips: \(error?.localizedDescription ?? "Unknown error")")
+                return
+            }
+            self.trips = documents.compactMap { doc in
+                do {
+                    return try doc.data(as: Trip.self)  // Convert Firestore document to Trip
+                } catch {
+                    print("Error decoding trip: \(error.localizedDescription)")
+                    return nil
+                }
+            }
         }
     }
 }

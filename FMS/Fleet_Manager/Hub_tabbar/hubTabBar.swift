@@ -12,7 +12,8 @@ import FirebaseFirestore
 
 
 struct hubTabBar: View {
-    @State var users: [User] = []
+    @StateObject private var viewModel = DriverViewModel()
+   
     @State  var vehicles: [Vehicle] = []
 
     let db = Firestore.firestore()
@@ -32,7 +33,7 @@ struct hubTabBar: View {
                     // Drivers Section
                     SectionHeader(title: "Drivers", destination: DriverListView()
 )
-                    DriverList(filteredUsers: users)
+                    DriverList(filteredUsers:viewModel.drivers )
                     
                     // Maintenance Personnel Section
                     SectionHeader(title: "Maintenance Personnel", destination: MaintenanceListView())
@@ -49,24 +50,14 @@ struct hubTabBar: View {
                 UINavigationBar.appearance().backgroundColor = .white
                 UINavigationBar.appearance().shadowImage = UIImage()
                 UINavigationBar.appearance().isTranslucent = false
-                fetchUsersDriver()
+          
                 fetchVehicles()
             }
         }
     }
     
-    func fetchUsersDriver() {
-        db.collection("users").whereField("role", isEqualTo: "Driver").getDocuments { snapshot, error in
-            guard let documents = snapshot?.documents, error == nil else {
-                print("Error fetching users: \(error?.localizedDescription ?? "Unknown error")")
-                return
-            }
-            self.users = documents.compactMap { doc in
-                let user = try? doc.data(as: User.self)
-                return user?.id != nil ? user : nil
-            }
-        }
-    }
+    
+  
     
     func fetchVehicles() {
         let db = Firestore.firestore()
@@ -178,11 +169,10 @@ struct VehicleCard: View {
     var body: some View {
         HStack(spacing: 12) {
             
-            Image("Freightliner_M2_106_6x4_2014_(14240376744)")
-                .resizable()
-                .scaledToFit()
-                .frame( height: 80)
-                .cornerRadius(15)
+            vehicleImageLoaders(imageUrl: getFormattedImageUrls(vehicle.vehicleImage))
+                .onAppear {
+                    print("🔍 Vehicle image property: \(vehicle.vehicleImage)")
+                }
 //                .shadow(radius: 5)
 //                .padding()
             // Display vehicle image from URL
@@ -219,22 +209,39 @@ struct VehicleCard: View {
             Spacer()
         }
         
-        .padding()
-        .padding(.leading,-7)// Add padding to make the card look nicer
+        .padding(.all,8)
+        .padding(.leading,-16)// Add padding to make the card look nicer
         .background(Color(.systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(color: Color.black.opacity(0.1), radius: 3)
+    }
+    func getFormattedImageUrls(_ rawUrl: String?) -> String? {
+        guard let rawUrl = rawUrl, !rawUrl.isEmpty else {
+            print("⚠️ Empty or nil image URL")
+            return nil
+        }
+        
+        // If the URL doesn't start with http or https, it might be a Firebase Storage reference
+        if !rawUrl.hasPrefix("http") {
+            // Assuming you're using Firebase Storage, construct the proper URL
+            // Adjust the bucket URL according to your Firebase project
+            let storageUrl = "https://firebasestorage.googleapis.com/v0/b/YOUR-FIREBASE-PROJECT.appspot.com/o/"
+            let encodedPath = rawUrl.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? rawUrl
+            return "\(storageUrl)\(encodedPath)?alt=media"
+        }
+        
+        return rawUrl
     }
 }
 
 
 struct DriverList: View {
-    var filteredUsers: [User]
+    var filteredUsers: [Driver]
     
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 12) {
-                ForEach(filteredUsers) { user in
+                ForEach(filteredUsers.prefix(5)) { user in
                     DriverCard(user: user)
                 }
             }
@@ -244,7 +251,7 @@ struct DriverList: View {
 }
 
 struct DriverCard: View {
-    var user: User
+    var user: Driver
     
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -279,6 +286,9 @@ struct DriverCard: View {
 //                        .font(.caption)
 //                        .foregroundColor(.gray)
 //                }
+                Text("\(user.status ? "Active" : "Inactive")")
+                    .font(.subheadline)
+                    .foregroundColor(user.status ? .green : .red)
               
             }.padding(.top,20)
                 .padding(.leading,-30)
@@ -329,6 +339,70 @@ struct MaintenancePersonnelLists: View {
 
     private func deletePerson(at offsets: IndexSet) {
         maintenanceList.remove(atOffsets: offsets)
+    }
+}
+
+struct vehicleImageLoaders: View {
+    let imageUrl: String?
+    
+    var body: some View {
+        if let imageUrl = imageUrl, let url = URL(string: imageUrl), !imageUrl.isEmpty {
+            AsyncImage(url: url) { phase in
+                switch phase {
+                case .empty:
+                    ProgressView()
+                        .onAppear {
+                            print("📷 Loading image...")
+                        }
+                case .success(let image):
+                    image.resizable()
+                        .scaledToFill()
+                        .frame(width: 70, height: 70)
+                        .cornerRadius(5)
+//                        .clipped()
+//                        .overlay(RoundedRectangle(cornerRadius: 25).stroke(Color.gray.opacity(0.3), lineWidth: 2))
+//                        .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
+
+
+                        .onAppear {
+                            print("✅ Successfully loaded image")
+                        }
+                case .failure(let error):
+                    placeholderImage
+                        .onAppear {
+                            print("❌ Failed to load image: \(error.localizedDescription)")
+                        }
+                @unknown default:
+                    EmptyView()
+                }
+            }
+            .onAppear {
+                print("📷 Attempting to load image from URL: \(imageUrl)")
+            }
+            .padding(.horizontal)
+        } else {
+            placeholderImage
+                .onAppear {
+                    print("⚠️ No valid image URL provided: \(imageUrl ?? "nil")")
+                }
+        }
+    }
+    
+    private var placeholderImage: some View {
+        Image(systemName: "photo.fill")
+            
+            .resizable()
+            .scaledToFit()
+            .frame(height: 20)
+            .foregroundColor(.gray)
+            .opacity(0.5)
+            .padding()
+//            .padding(.horizontal)
+//            .overlay(
+//                RoundedRectangle(cornerRadius: 15)
+//                    .stroke(Color.gray, lineWidth: 3) // Frame for placeholder
+//            )
+            .shadow(color: Color.black.opacity(0.1), radius: 8, x: 4, y: 4)
     }
 }
 

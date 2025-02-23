@@ -93,7 +93,7 @@ struct VehicleDetailsView: View {
         _mileage = State(initialValue: "\(vehicle.mileage)")
     }
     
-    private func getFormattedImageUrl(_ rawUrl: String?) -> String? {
+    func getFormattedImageUrl(_ rawUrl: String?) -> String? {
         guard let rawUrl = rawUrl, !rawUrl.isEmpty else {
             print("⚠️ Empty or nil image URL")
             return nil

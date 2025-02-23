@@ -43,8 +43,8 @@ struct DriverListView: View {
                             .frame(maxWidth: .infinity) // Ensures full width
                             .cornerRadius(15)
                         
-                        NavigationLink(destination: DriverDetails(user: driver)) {
-                            EmptyView()
+                        NavigationLink(destination: DriverDetails(driver: driver)) {
+//                            EmptyView()
                         }
                         .opacity(0)
                     }
