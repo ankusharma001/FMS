@@ -540,31 +540,58 @@ struct TripDetailsView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Trip Details")
-                .font(.headline)
+        
+        VStack(alignment: .center, spacing: 10) {
+//            Text("Trip Details")
+//                .font(.headline)
+//                .padding()
+            
+            HStack{
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("From")
+                        .font(.subheadline)
+                    Text("\(updatedTrip.startLocation)")
+                        .font(.body)
+                        .bold()
+                    Rectangle()
+                        .frame(maxWidth: .infinity, maxHeight: 1)
+                        .foregroundColor(.gray)
+                        .opacity(0.5)
+                    Text("To")
+                        .font(.subheadline)
+                    Text("\(updatedTrip.endLocation)")
+                        .font(.body)
+                        .bold()
+                    Rectangle()
+                        .frame(maxWidth: .infinity, maxHeight: 1)
+                        .foregroundColor(.gray)
+                        .opacity(0.5)
+                    Text("Status: \(updatedTrip.TripStatus.rawValue)")
+                        .font(.body)
+                        .bold()
+                        .foregroundColor(getStatusColor(updatedTrip.TripStatus))
+                    Rectangle()
+                        .frame(maxWidth: .infinity, maxHeight: 1)
+                        .foregroundColor(.gray)
+                        .opacity(0.5)
+                    Text("Distance: \(updatedTrip.distance, specifier: "%.2f") km")
+                        .font(.body)
+                    Rectangle()
+                        .frame(maxWidth: .infinity, maxHeight: 1)
+                        .foregroundColor(.gray)
+                        .opacity(0.5)
+                    Text("Estimated Time: \(updatedTrip.estimatedTime, specifier: "%.2f") mins")
+                       
+                }
                 .padding()
+//                .background(Color(.systemGray6))
+                .cornerRadius(12)
+                .padding(.horizontal)
+                Spacer()
+            }.background(Color(.white)).cornerRadius(12).padding(.leading,12)
 
-            VStack(alignment: .leading, spacing: 12) {
-                Text("From: \(updatedTrip.startLocation)")
-                    .font(.body)
-                    .bold()
-                Text("To: \(updatedTrip.endLocation)")
-                    .font(.body)
-                    .bold()
-                Text("Status: \(updatedTrip.TripStatus.rawValue)")
-                    .font(.body)
-                    .bold()
-                    .foregroundColor(getStatusColor(updatedTrip.TripStatus))
-                Text("Distance: \(updatedTrip.distance, specifier: "%.2f") km")
-                    .font(.body)
-                Text("Estimated Time: \(updatedTrip.estimatedTime, specifier: "%.2f") mins")
-                    .font(.body)
-            }
-            .padding()
-            .background(Color(.systemGray6))
-            .cornerRadius(12)
-            .padding(.horizontal)
+            
+            HStack{
             
             // Driver Information Section
             VStack(alignment: .leading, spacing: 8) {
@@ -593,40 +620,49 @@ struct TripDetailsView: View {
                 }
             }
             .padding()
-            .background(Color(.systemGray6))
+//            .background(Color(.systemGray6))
             .cornerRadius(12)
             .padding(.horizontal)
+                Spacer()
+        }
+        .background(Color(.white)).cornerRadius(12).padding()
             
             // Vehicle Information Section
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Vehicle Information").font(.headline)
-                
-                if let vehicle = updatedTrip.assignedVehicle {
-                    HStack {
-                        Image(systemName: "car.fill")
-                            .foregroundColor(.blue)
-                        VStack(alignment: .leading) {
-                            Text("\(vehicle.model) (\(vehicle.type.rawValue))").bold()
-                            Text("Reg: \(vehicle.registrationNumber)")
-                                .font(.caption)
-                            Text("Fuel: \(vehicle.fuelType.rawValue)")
-                                .font(.caption)
+            HStack{
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Vehicle Information").font(.headline)
+                    
+                    if let vehicle = updatedTrip.assignedVehicle {
+                        HStack {
+                            Image(systemName: "car.fill")
+                                .foregroundColor(.blue)
+                            VStack(alignment: .leading) {
+                                Text("\(vehicle.model) (\(vehicle.type.rawValue))").bold()
+                                Text("Reg: \(vehicle.registrationNumber)")
+                                    .font(.caption)
+                                Text("Fuel: \(vehicle.fuelType.rawValue)")
+                                    .font(.caption)
+                                    .foregroundColor(.gray)
+                            }
+                        }
+                    } else {
+                        HStack {
+                            Image(systemName: "car.circle")
+                                .foregroundColor(.gray)
+                            Text("Not Assigned")
                                 .foregroundColor(.gray)
                         }
                     }
-                } else {
-                    HStack {
-                        Image(systemName: "car.circle")
-                            .foregroundColor(.gray)
-                        Text("Not Assigned")
-                            .foregroundColor(.gray)
-                    }
-                }
+                }.padding(.trailing,0)
+                .padding()
+                
+//                .background(Color(.systemGray6))
+                .cornerRadius(12)
+                .padding(.horizontal)
+                Spacer()
             }
-            .padding()
-            .background(Color(.systemGray6))
-            .cornerRadius(12)
-            .padding(.horizontal)
+            .background(Color(.white)).cornerRadius(12).padding(.trailing,0).padding()
+          
 
             // Buttons for Assigning Driver and Vehicle
             HStack(spacing: 16) {
@@ -673,7 +709,7 @@ struct TripDetailsView: View {
             }
 
             Spacer()
-        }
+        }.background(Color(.systemGray6))
         .navigationTitle("Trip Details")
         .sheet(isPresented: $showDriverList) {
             AvailableDriverView(trip: trip) { assignedDriver in
@@ -691,6 +727,11 @@ struct TripDetailsView: View {
         .onAppear {
             fetchUpdatedTripData()
         }
+        .onDisappear {
+                   if updatedTrip.TripStatus == .scheduled {
+                       removeDriverAndVehicle()
+                   }
+               }
     }
     
     private func getStatusColor(_ status: TripStatus) -> Color {
@@ -890,6 +931,38 @@ struct TripDetailsView: View {
             showSuccessMessage = true
         }
     }
+    private func removeDriverAndVehicle() {
+            guard let tripId = trip.id else { return }
+            
+            let db = Firestore.firestore()
+            let tripRef = db.collection("trips").document(tripId)
+            var updates: [String: Any] = [:]
+        
+            if let driver = updatedTrip.assignedDriver, let driverId = driver.id {
+                let driverRef = db.collection("users").document(driverId)
+                driverRef.updateData([
+                    "status": true,
+                    "upcomingTrip": FieldValue.delete()
+                ])
+                updates["assignedDriver"] = FieldValue.delete()
+            }
+        
+            if let vehicle = updatedTrip.assignedVehicle, let vehicleId = vehicle.id {
+                let vehicleRef = db.collection("vehicles").document(vehicleId)
+                vehicleRef.updateData(["status": true])
+                updates["assignedVehicle"] = FieldValue.delete()
+            }
+        
+            if !updates.isEmpty {
+                tripRef.updateData(updates) { error in
+                    if let error = error {
+                        print("Failed to reset trip assignments: \(error)")
+                    } else {
+                        print("Trip assignments reset successfully")
+                    }
+                }
+            }
+        }
 }
 
 
@@ -897,7 +970,7 @@ struct TripDetailsView_Previews: PreviewProvider {
     static var previews: some View {
         TripDetailsView(trip: Trip(
             tripDate: Date(),
-            startLocation: "123 Business Park, Los Angeles",
+            startLocation: "123 Business Park, Los Angeles123 Business Park, Los Angeles",
             endLocation: "456 Industrial Zone, San Francisco",
             distance: 150.5,
             estimatedTime: 120.0,
