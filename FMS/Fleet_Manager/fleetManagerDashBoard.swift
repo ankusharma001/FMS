@@ -12,7 +12,7 @@ func generateExampleTrips() -> [Trip] {
 
     let driver2 = Driver(name: "Alice Smith", email: "alice@example.com", phone: "987-654-3210", experience: .lessThanFive, license: "A67890", geoPreference: .hilly, vehiclePreference: .van, status: true)
     
-    let vehicle1 = Vehicle(type: .car, model: "", registrationNumber: "", fuelType: .diesel, mileage: 1, rc: "", vehicleImage: "", insurance: "", pollution: "", status: false)
+    let vehicle1 = Vehicle(type: .car, model: "", registrationNumber: "", fuelType: .diesel, mileage: 1, rc: "", vehicleImage: "", insurance: "", pollution: "", status: false, totalDistance: 0)
     let dateFormatter = DateFormatter()
     dateFormatter.dateFormat = "yyyy/MM/dd"
 

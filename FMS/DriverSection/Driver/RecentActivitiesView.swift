@@ -6,72 +6,148 @@
 //
 
 import SwiftUI
+import FirebaseFirestore
+
+struct RecentActivity: Identifiable {
+    let id = UUID()
+    let vehicleNumber: String
+    let fromLocation: String
+    let toLocation: String
+    let tripDate: Date
+}
 
 struct RecentActivitiesView: View {
-    let activities = [
-        ("456 Market St", "10:30 AM"),
-        ("789 Tech Park", "09:15 AM"),
-        ("321 Harbor View", "08:00 AM")
-    ]
-    
+    @State private var recentTrips: [RecentActivity] = []
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 10) {
             Text("Recent Activities")
                 .font(.headline)
-                .bold()
                 .padding(.horizontal)
 
-            // White Card for all Activities
-            VStack(spacing: 8) {
-                ForEach(activities, id: \.0) { activity in
-                    HStack {
-                        // Location Icon with Green Dot
-                        Image(systemName: "location.circle.fill")
-                            .foregroundColor(.green)
-                            .font(.system(size: 20))
-
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(activity.0)
-                                .font(.body)
-                                .bold()
-
-                            Text(activity.1)
-                                .font(.subheadline)
-                                .foregroundColor(.gray)
-                        }
-                        Spacer()
-
-                        // Delivered Status
+            if recentTrips.isEmpty {
+                Text("No recent trips available.")
+                    .foregroundColor(.gray)
+                    .padding(.horizontal)
+            } else {
+                ForEach(recentTrips) { trip in
+                    VStack(alignment: .leading, spacing: 8) {
                         HStack {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(.green)
-                                .font(.system(size: 16))
+                            Image(systemName: "car.fill")
+                                .foregroundColor(.blue)
+                                .font(.system(size: 24))
 
-                            Text("Delivered")
-                                .foregroundColor(.green)
-                                .font(.subheadline)
-                                .bold()
+                            VStack(alignment: .leading) {
+                                Text("Vehicle #\(trip.vehicleNumber)")
+                                    .font(.headline)
+                                Text("\(formattedDate(trip.tripDate))")
+                                    .font(.subheadline)
+                                    .foregroundColor(.gray)
+                            }
+                            Spacer()
+                        }
+
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack {
+                                Circle().fill(Color.blue).frame(width: 8, height: 8)
+                                Text("From: \(trip.fromLocation)")
+                                    .font(.body)
+                            }
+                            HStack {
+                                RoundedRectangle(cornerRadius: 2)
+                                    .fill(Color.gray.opacity(0.5))
+                                    .frame(width: 2, height: 20)
+                                    .padding(.leading, 3.5)
+                                Spacer()
+                            }
+                            HStack {
+                                Circle().fill(Color.gray).frame(width: 8, height: 8)
+                                Text("To: \(trip.toLocation)")
+                                    .font(.body)
+                            }
                         }
                     }
-                    .padding(.vertical, 10)
+                    .padding()
+                    .background(Color.white)
+                    .cornerRadius(10)
+                    .shadow(color: .gray.opacity(0.2), radius: 5, x: 0, y: 2)
                     .padding(.horizontal)
-                    
-                    // Divider Line Between Activities (except last one)
-                    if activity.0 != activities.last?.0 {  // ✅ Fixed error here
-                        Divider()
+                }
+            }
+        }
+        .padding(.top, 10)
+        .background(Color(.systemGray6))
+        .onAppear {
+            fetchRecentTrips()
+        }
+    }
+
+    // MARK: - Fetch Real Data from Firestore
+    func fetchRecentTrips() {
+        let db = Firestore.firestore()
+
+        guard let driverID = UserDefaults.standard.string(forKey: "loggedInUserUUID") else {
+            print("No logged-in user found in UserDefaults.")
+            return
+        }
+
+        print("Fetching recent trips for driverID: \(driverID)")
+
+        db.collection("trips")
+            .whereField("driverID", isEqualTo: driverID)
+            .order(by: "tripDate", descending: true)
+            .limit(to: 5)
+            .getDocuments { (querySnapshot, error) in
+                if let error = error {
+                    print("Firestore fetch error: \(error.localizedDescription)")
+                    return
+                }
+
+                guard let documents = querySnapshot?.documents, !documents.isEmpty else {
+                    print("No recent trips found for driverID: \(driverID)")
+                    return
+                }
+
+                DispatchQueue.main.async {
+                    self.recentTrips = documents.compactMap { document in
+                        let data = document.data()
+                        guard let vehicleNumber = data["vehicleNumber"] as? String,
+                              let fromLocation = data["fromLocation"] as? String,
+                              let toLocation = data["toLocation"] as? String,
+                              let timestamp = data["tripDate"] as? Timestamp else {
+                            return nil
+                        }
+                        return RecentActivity(
+                            vehicleNumber: vehicleNumber,
+                            fromLocation: fromLocation,
+                            toLocation: toLocation,
+                            tripDate: timestamp.dateValue()
+                        )
                     }
                 }
             }
-            .background(Color.white) // White card for all activities
-            .cornerRadius(10)
-            .shadow(color: .gray.opacity(0.2), radius: 5, x: 0, y: 2) // Soft shadow effect
-            .padding(.horizontal)
+    }
+
+    // MARK: - Date Formatting
+    func formattedDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        return formatter.string(from: date)
+    }
+}
+
+// MARK: - Preview
+struct RecentActivitiesScreen: View {
+    var body: some View {
+        VStack {
+            RecentActivitiesView()
+            Spacer()
         }
-        .padding(.top, 10)
-        .background(Color(.systemGray6)) // Light gray background for the screen
+        .background(Color(.systemGray6))
+        .edgesIgnoringSafeArea(.all)
     }
 }
 
 #Preview {
-    RecentActivitiesView()
+    RecentActivitiesScreen()
 }

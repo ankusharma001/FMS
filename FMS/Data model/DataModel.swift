@@ -123,9 +123,10 @@ class Vehicle: Codable, Identifiable {
     var vehicleImage: String
     var insurance: String
     var pollution: String
-    var status: Bool 
+    var totalDistance: Int
+    var status: Bool
     
-    init(type: VehicleType, model: String, registrationNumber: String, fuelType: FuelType, mileage: Int, rc: String, vehicleImage: String, insurance: String, pollution: String, status: Bool) {
+    init(type: VehicleType, model: String, registrationNumber: String, fuelType: FuelType, mileage: Int, rc: String, vehicleImage: String, insurance: String, pollution: String, status: Bool, totalDistance: Int) {
         self.type = type
         self.model = model
         self.registrationNumber = registrationNumber
@@ -136,6 +137,7 @@ class Vehicle: Codable, Identifiable {
         self.insurance = insurance
         self.pollution = pollution
         self.status = status
+        self.totalDistance = totalDistance
     }
 
     // Custom init method to handle Firestore decoding
@@ -153,6 +155,7 @@ class Vehicle: Codable, Identifiable {
         self.insurance = try values.decode(String.self, forKey: .insurance)
         self.pollution = try values.decode(String.self, forKey: .pollution)
         self.status = try values.decode(Bool.self, forKey: .status)
+        self.totalDistance = try values.decode(Int.self, forKey: .totalDistance)
         
         // Custom decoding for `status` to handle type mismatch
 //        if let statusString = try values.decodeIfPresent(String.self, forKey: .status) {
@@ -176,6 +179,7 @@ class Vehicle: Codable, Identifiable {
         case insurance
         case pollution
         case status
+        case totalDistance
     }
 }
 

@@ -381,5 +381,5 @@ struct DetailField: View {
     }
 }
 #Preview {
-    VehicleDetailsView(vehicle: Vehicle(type: .truck, model: "Toyota RAV4", registrationNumber: "KA01 AB234", fuelType: .petrol, mileage: 15000, rc: "rcImage", vehicleImage: "vehicleImage", insurance: "insuranceImage", pollution: "pollutionImage", status: true))
+    VehicleDetailsView(vehicle: Vehicle(type: .truck, model: "Toyota RAV4", registrationNumber: "KA01 AB234", fuelType: .petrol, mileage: 15000, rc: "rcImage", vehicleImage: "vehicleImage", insurance: "insuranceImage", pollution: "pollutionImage", status: true, totalDistance: 0))
 }

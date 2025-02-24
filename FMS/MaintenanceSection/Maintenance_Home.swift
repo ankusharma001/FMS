@@ -232,7 +232,8 @@ struct MaintenanceHomeView: View {
                 vehicleImage: "freightliner_image",
                 insurance: "INS789",
                 pollution: "PUC456",
-                status: true
+                status: true,
+                totalDistance: 0
             )
             
             let truck2 = Vehicle(
@@ -245,7 +246,8 @@ struct MaintenanceHomeView: View {
                 vehicleImage: "volvo_image",
                 insurance: "INS012",
                 pollution: "PUC789",
-                status: true
+                status: true,
+                totalDistance: 0
             )
             
             let truck3 = Vehicle(
@@ -258,7 +260,8 @@ struct MaintenanceHomeView: View {
                 vehicleImage: "peterbilt_image",
                 insurance: "INS345",
                 pollution: "PUC012",
-                status: true
+                status: true,
+                totalDistance: 0
             )
             
             // Create sample tasks with different vehicles

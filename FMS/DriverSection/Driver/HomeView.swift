@@ -5,36 +5,63 @@
 //  Created by Prince on 14/02/25.
 //
 
+//
+//  HomeView.swift
+//  FMS
+//
+//  Created by Prince on 14/02/25.
+//
+
 import SwiftUI
+import FirebaseFirestore
 
 struct HomeView: View {
-    var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
-                // ✅ Navigation Title (Fixed)
-                Text("Driver Dashboard")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal)
-                    .padding(.top, 8) // Adjust spacing from top
-                    .padding(.bottom, 8) // Adjust spacing before scroll
+    @State private var userData: [String: Any] = [:]
+    @State private var userUUID: String? = UserDefaults.standard.string(forKey: "loggedInUserUUID")
+    @State private var userName: String = "Loading..."
 
-                // ✅ Scrollable Content
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 0) {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
-                        DriverHeaderView() // ✅ Scroll starts from here
+                        DriverHeaderView(userName: userName)
                         CurrentTripView()
                         RecentActivitiesView()
                     }
                     .padding(.bottom, 20)
+                    .padding(.horizontal) // Add horizontal padding to the ScrollView content
                 }
+                .background(Color(.systemGray6))
+                .navigationTitle("Driver DashBoard")
             }
-            .background(Color(.systemGray6)) // Matches background
+            .onAppear { // Fetch user data when the view appears
+                fetchUserProfile()
+            }
+        }
+    }
+
+    func fetchUserProfile() {
+        guard let userUUID = userUUID else {
+            print("No user UUID found")
+            return
+        }
+
+        let db = Firestore.firestore()
+        db.collection("users").document(userUUID).getDocument { (document, error) in
+            if let document = document, document.exists {
+                DispatchQueue.main.async {
+                    self.userData = document.data() ?? [:]
+                    self.userName = self.userData["name"] as? String ?? "Driver Name" // Provide a default name
+                    print("User profile fetched: \(self.userData)")
+                }
+            } else {
+                print("User not found or error: \(error?.localizedDescription ?? "Unknown error")")
+                self.userName = "Driver Name" // Set default in case of error
+            }
         }
     }
 }
-
 #Preview {
     HomeView()
 }

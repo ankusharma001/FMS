@@ -210,6 +210,41 @@ class FirestoreService {
             completion(.failure(error))
         }
     }
+    
+    func updateVehicleTotalDistance(vehicleId: String, tripDistance: Double, completion: @escaping (Result<Void, Error>) -> Void) {
+            // Calculate round trip distance
+            let roundTripDistance = Int(tripDistance * 2)
+            
+            let vehicleRef = db.collection("vehicles").document(vehicleId)
+            
+            // Use transaction to safely update the total distance
+            db.runTransaction({ (transaction, errorPointer) -> Any? in
+                let vehicleDocument: DocumentSnapshot
+                do {
+                    try vehicleDocument = transaction.getDocument(vehicleRef)
+                } catch let fetchError as NSError {
+                    errorPointer?.pointee = fetchError
+                    return nil
+                }
+                
+                // Get current total distance
+                let currentTotalDistance = vehicleDocument.data()?["totalDistance"] as? Int ?? 0
+                
+                // Add the new round trip distance
+                let newTotalDistance = currentTotalDistance + roundTripDistance
+                
+                // Update the document
+                transaction.updateData(["totalDistance": newTotalDistance], forDocument: vehicleRef)
+                
+                return nil
+            }) { (_, error) in
+                if let error = error {
+                    completion(.failure(error))
+                } else {
+                    completion(.success(()))
+                }
+            }
+        }
      
     func assignDriver(to trip: Trip, driver: Driver) { // assign driver function
         let tripRef = Firestore.firestore().collection("trips").document(trip.id!)
@@ -377,10 +412,25 @@ struct AddNewTripView: View {
                     isLoading = false
                     switch result {
                     case .success:
-                        alertMessage = AlertMessage(title: "Done", message: "Trip added successfully!")
-                    case .failure(let error):
-                        alertMessage = AlertMessage(title: "Error", message: error.localizedDescription)
-                    }
+                                    // When a vehicle is assigned, update its total distance
+                                    if let vehicleId = newTrip.assignedVehicle?.id {
+                                        self.firestoreService.updateVehicleTotalDistance(vehicleId: vehicleId,
+                                                                                        tripDistance: calculatedDistance) { updateResult in
+                                            switch updateResult {
+                                            case .success:
+                                                self.alertMessage = AlertMessage(title: "Success",
+                                                    message: "Trip added and vehicle distance updated successfully!")
+                                            case .failure(let error):
+                                                self.alertMessage = AlertMessage(title: "Warning",
+                                                    message: "Trip added but failed to update vehicle distance: \(error.localizedDescription)")
+                                            }
+                                        }
+                                    } else {
+                                        self.alertMessage = AlertMessage(title: "Done", message: "Trip added successfully!")
+                                    }
+                                case .failure(let error):
+                                    self.alertMessage = AlertMessage(title: "Error", message: error.localizedDescription)
+                                }
                 }
             }
         }
