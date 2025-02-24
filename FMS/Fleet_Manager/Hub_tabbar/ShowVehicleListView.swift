@@ -75,6 +75,7 @@ struct ShowVehicleListView: View {
             }
         }
     }
+    
     private var fuelfilterPicker: some View {
            Menu {
                // Option to show all fuel types
@@ -100,11 +101,13 @@ struct ShowVehicleListView: View {
                }
            } label: {
                HStack {
-                   Image(systemName: "fuelpump.fill" )
-                       .foregroundColor(.red)
-                   
-                   Text(selectedFuelType?.rawValue ?? " ")
+                   Image(systemName: "fuelpump.fill")
                        .foregroundColor(.black)
+                   
+                   Text(selectedFuelType?.rawValue ?? "All")
+                       .foregroundColor(.black)
+                       .font(.system(size: 12)) // Adjust font size if needed
+                   
                    Image(systemName: "chevron.down")
                        .foregroundColor(.gray)
                }
@@ -112,11 +115,12 @@ struct ShowVehicleListView: View {
                .background(Color.white.opacity(0.1))
                .overlay(
                    RoundedRectangle(cornerRadius: 8)
-                       .stroke(Color.blue, lineWidth: 2) // 20 is the border width
+                       .stroke(Color.black, lineWidth: 2)
                )
                .cornerRadius(8)
-
+               .padding(.top,20)
            }
+
        }
 
        private var filterPicker: some View {
@@ -144,7 +148,8 @@ struct ShowVehicleListView: View {
                HStack {
                    Image(systemName: "truck.box.fill")
                        .foregroundColor(.black)
-                   Text(selectedVehicleType?.rawValue ?? "")
+                   Text(selectedVehicleType?.rawValue ?? "All")
+                       .font(.system(size: 12))
                        .foregroundColor(.black)
                    Image(systemName: "chevron.down")
                        .foregroundColor(.gray)
@@ -153,9 +158,10 @@ struct ShowVehicleListView: View {
                .background(Color.white.opacity(0.1))
                .overlay(
                    RoundedRectangle(cornerRadius: 8)
-                       .stroke(Color.blue, lineWidth: 2) // 20 is the border width
+                       .stroke(Color.black, lineWidth: 2) // 20 is the border width
                )
                .cornerRadius(8)
+               .padding(.top,20)
            }
        }
        
@@ -184,15 +190,17 @@ struct ShowVehicleListView: View {
             HStack {
                 Image(systemName: "power.circle.fill")
                     .foregroundColor(.green)
-                Text(selectedStatus == nil ? "" : (selectedStatus! ? "Active" : "Inactive"))
+                Text(selectedStatus == nil ? "All" : (selectedStatus! ? "Active" : "Inactive"))
+                    .font(.system(size: 12))
                     .foregroundColor(.black)
                 Image(systemName: "chevron.down")
                     .foregroundColor(.gray)
             }
             .padding(7)
             .background(Color.white.opacity(0.1))
-            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.blue, lineWidth: 2))
+            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 2))
             .cornerRadius(8)
+            .padding(.top,20)
         }
     }
 
@@ -230,7 +238,9 @@ struct ShowVehicleListView: View {
                                 .resizable()
                                 .scaledToFit()
                                 .frame(width: 40, height: 40)
-                                .padding(.leading, 8)
+                                .padding(8)
+                                .background(Color.gray.opacity(0.2)) // Light gray background
+                                .clipShape(Circle()) // Rounded corners
 
                             VStack(alignment: .leading) {
                                 Text(vehicle.model)
@@ -240,7 +250,7 @@ struct ShowVehicleListView: View {
                                     .font(.subheadline)
                                     .foregroundColor(.gray)
                             }
-                            .padding(.vertical, 5)
+                            .padding(.leading, 0)
 
                             Spacer()
 

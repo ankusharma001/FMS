@@ -104,7 +104,7 @@ struct DashboardView: View {
                         .font(.headline)
                         .padding(.horizontal)
                     
-                    ForEach(trips, id: \.id) { trip in
+                    ForEach(trips.prefix(3), id: \.id) { trip in
                         TripCardView(trip: trip)
                             .padding(.bottom)
                     }
