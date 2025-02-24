@@ -20,6 +20,15 @@ struct TripDetails {
 }
 
 struct TripDetailView: View {
+    @State var startLocation: String
+    @State var endLocation: String
+    @State var distance: String
+    @State var vehicleModel: String
+    @State var driverName: String
+    @State var tripDate: String
+    @State var vehicleType: String
+    
+    
     let trip = TripDetails(
         startLocation: "infosys",
         endLocation: "Rajpura",
@@ -34,7 +43,7 @@ struct TripDetailView: View {
         ScrollView {  // 🛠️ Makes screen scrollable
             VStack(spacing: 0) {
                 // **Real Map with Route**
-                RouteMapView(startAddress: trip.startLocation, endAddress: trip.endLocation)
+                RouteMapView(startAddress: startLocation, endAddress: endLocation)
                     .frame(height: 350)
                     .clipShape(RoundedRectangle(cornerRadius: 10))
 
@@ -48,22 +57,52 @@ struct TripDetailView: View {
 
                 // **Trip Details Section**
                 VStack(alignment: .leading, spacing: 12) {
-                    tripInfoRow(icon: "mappin.circle.fill", title: "Start Location", value: trip.startLocation)
-                    tripInfoRow(icon: "location.fill", title: "End Location", value: trip.endLocation)
+                    tripInfoRow(icon: "mappin.circle.fill", title: "Start Location", value: startLocation)
+                    tripInfoRow(icon: "location.fill", title: "End Location", value: endLocation)
 
                     // **Grid Layout for Detail Boxes**
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                        infoBox(icon: "calendar", title: "Trip Date", value: trip.tripDate)
-                        infoBox(icon: "map.fill", title: "Distance", value: trip.distance)
-                        vehicleBox(icon: "truck.box.fill", vehicleName: trip.vehicleName, model: trip.vehicleModel)  // 🚛 Truck Icon
-                        infoBox(icon: "person.fill", title: "Driver", value: trip.driverName)
+                        infoBox(icon: "calendar", title: "Trip Date", value: tripDate)
+                        infoBox(icon: "map.fill", title: "Distance", value: distance)
+                        vehicleBox(icon: "truck.box.fill", vehicleName: vehicleModel, model: vehicleType)  // 🚛 Truck Icon
+                        infoBox(icon: "person.fill", title: "Driver", value: driverName)
                     }
                     .padding(.top, 10)
                 }
                 .padding()
 
                 Spacer()
+                HStack {
+                Button(action: {
+                    print("End Trip button tapped")
+                    // Add logic for starting trip
+                }) {
+                    Text("End Trip")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                }
+
+                Button(action: {
+                    print("SOS button tapped")
+                    // Add emergency handling logic
+                }) {
+                    Text("SOS")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.red)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                }
             }
+            .padding()
+            }
+            .navigationBarTitle("Current Trip", displayMode: .inline)
+            .navigationBarBackButtonHidden(true)
             .background(Color(.systemGroupedBackground))
         }
     }
@@ -88,7 +127,7 @@ struct TripDetailView: View {
 
     // **Standard Box for Trip Info (Date, Distance, Driver)**
     private func infoBox(icon: String, title: String, value: String) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 1) {
             HStack(spacing: 8) {
                 Image(systemName: icon)
                     .foregroundColor(.blue)
@@ -212,8 +251,8 @@ struct RouteMapView: UIViewRepresentable {
 }
 
 // **Preview**
-struct TripDetailView_Previews: PreviewProvider {
-    static var previews: some View {
-        TripDetailView()
-    }
-}
+//struct TripDetailView_Previews: PreviewProvider {
+//    static var previews: some View {
+//        TripDetailView()
+//    }
+//}
