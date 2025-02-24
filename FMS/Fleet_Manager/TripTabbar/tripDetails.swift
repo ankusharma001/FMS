@@ -173,7 +173,7 @@ struct TripDetailsView: View {
                 Button(action: { startTrip() }) {
                     HStack {
                         Image(systemName: "play.fill")
-                        Text("Start Trip")
+                        Text("Create Trip")
                     }
                     .padding()
                     .frame(maxWidth: .infinity)
@@ -323,6 +323,26 @@ struct TripDetailsView: View {
             prevVehicleRef.updateData(["status": true])
         }
 
+        vehicleRef.getDocument { document, error in
+               if let document = document, document.exists {
+                   if let currentDistance = document.data()?["totalDistance"] as? Double {
+                       let newDistance = currentDistance + Double(updatedTrip.distance * 2);
+                       
+                       vehicleRef.updateData(["totalDistance": newDistance]) { error in
+                           if let error = error {
+                               print("Error updating totalDistance: \(error.localizedDescription)")
+                           } else {
+                               print("Successfully updated totalDistance to \(newDistance)")
+                           }
+                       }
+                   } else {
+                       print("totalDistance field missing or invalid")
+                   }
+               } else {
+                   print("Vehicle document not found: \(error?.localizedDescription ?? "Unknown error")")
+               }
+           }
+        
         db.runTransaction({ (transaction, errorPointer) -> Any? in
             let vehicleSnapshot: DocumentSnapshot
             do {
@@ -369,8 +389,10 @@ struct TripDetailsView: View {
             } else {
                 var updatedTripCopy = self.updatedTrip
                 updatedTripCopy.assignedVehicle = vehicle
-                self.updatedTrip = updatedTripCopy
                 
+                
+                self.updatedTrip = updatedTripCopy
+            
                 successMessage = "Vehicle assigned successfully!"
                 checkAndUpdateTripStatus()
             }
@@ -381,7 +403,7 @@ struct TripDetailsView: View {
    
     private func checkAndUpdateTripStatus() {
         if updatedTrip.assignedDriver != nil && updatedTrip.assignedVehicle != nil && updatedTrip.TripStatus == .scheduled {
-            successMessage += " Both driver and vehicle are now assigned. Trip is ready to start!"
+            successMessage += " Both driver and vehicle are now assigned. Trip is ready to Create!"
         }
     }
     
@@ -391,18 +413,19 @@ struct TripDetailsView: View {
         let db = Firestore.firestore()
         let tripRef = db.collection("trips").document(tripId)
         
+        
         tripRef.updateData([
             "TripStatus": TripStatus.inprogress.rawValue
         ]) { error in
             if let error = error {
                 print("Error starting trip: \(error)")
-                successMessage = "Failed to start trip: \(error.localizedDescription)"
+                successMessage = "Failed to Create trip: \(error.localizedDescription)"
             } else {
                 var updatedTripCopy = self.updatedTrip
                 updatedTripCopy.TripStatus = .inprogress
-                self.updatedTrip = updatedTripCopy
                 
-                successMessage = "Trip started successfully!"
+                self.updatedTrip = updatedTripCopy
+                successMessage = "Trip Created successfully!"
             }
             showSuccessMessage = true
         }
