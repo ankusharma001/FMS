@@ -246,6 +246,8 @@ struct DriverList: View {
                 }
             }
             .padding(.horizontal)
+            
+            
         }
     }
 }
@@ -255,11 +257,11 @@ struct DriverCard: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            HStack {
+            HStack (alignment: .top){
                 Image(systemName: "person.crop.circle.fill")
                     .resizable()
                     .frame(width: 35, height: 35)
-                    .padding(.leading,-20)
+                    .padding(.leading,-50)
                     .padding(.top,-25)
                 
                 
@@ -273,8 +275,8 @@ struct DriverCard: View {
                         .foregroundColor(.black)
                 }
                 .padding(.top,-27)
-                .padding(.leading,10)
-                .padding(.trailing,-15)
+                .padding(.leading,0)
+                //.padding(.trailing,-15)
             }.padding(.top,40)
             
             HStack {

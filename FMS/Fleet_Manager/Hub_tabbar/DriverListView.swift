@@ -24,11 +24,12 @@ struct DriverListView: View {
     
     var body: some View {
         VStack {
-            TextField("Search", text: $searchText)
+            TextField("Search...", text: $searchText)
                 .padding(10)
                 .background(Color.white)
                 .cornerRadius(10)
                 .padding(.horizontal)
+                .padding(.top,10)
             
             Picker("Status", selection: $selectedStatus) {
                 Text("All").tag("All")
@@ -37,6 +38,7 @@ struct DriverListView: View {
             }
             .pickerStyle(SegmentedPickerStyle())
             .padding(.horizontal)
+            
             
             List {
                 ForEach(filteredDrivers, id: \.id) { driver in
@@ -136,26 +138,37 @@ struct DriverListView: View {
 struct DriverRow: View {
     let driver: Driver
     var body: some View {
-        HStack {
-            Image(systemName: "person.circle.fill")
-                .resizable()
-                .frame(width: 50, height: 50)
-                .foregroundColor(.gray)
-            
-            VStack(alignment: .leading) {
-                Text(driver.name).font(.system(size: 18, weight: .bold))
-                Text("+91 \(driver.phone)").font(.system(size: 14)).foregroundColor(.gray)
+        VStack (alignment: .leading){
+            HStack {
+                Image(systemName: "person.circle.fill")
+                    .resizable()
+                    .frame(width: 50, height: 50)
+                    .foregroundColor(.gray)
+                
+                VStack(alignment: .leading) {
+                    Text(driver.name).font(.system(size: 18, weight: .bold))
+                    Text("+91 \(driver.phone)").font(.system(size: 14)).foregroundColor(.gray)
+                }
+                Spacer()
+                Text(driver.status ? "Active" : "Inactive")
+                    .font(.subheadline)
+                    .foregroundColor(driver.status ? .green : .red)
             }
-            Spacer()
-            Text(driver.status ? "Active" : "Inactive")
-                .font(.subheadline)
-                .foregroundColor(driver.status ? .green : .red)
+            VStack(alignment: .leading){
+                Text("Experience : \(driver.experience)").font(.system(size: 14)).foregroundColor(.gray)
+                Text("Geo Preference : \(driver.geoPreference)").font(.system(size: 14)).foregroundColor(.gray)
+                
+            }
         }
+        
         .padding()
         .background(Color.white)
         .cornerRadius(15)
         .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 5)
-        .padding(.horizontal)
-        .padding(.vertical, 5)
+        .padding(.horizontal,0)
+        
     }
+}
+#Preview{
+    DriverListView()
 }
