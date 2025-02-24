@@ -5,14 +5,6 @@
 //  Created by Prince on 14/02/25.
 //
 
-//
-//  CurrentTripView.swift
-//  FMS
-//
-//  Created by Prince on 14/02/25.
-//
-
-
 import SwiftUI
 import FirebaseFirestore
 

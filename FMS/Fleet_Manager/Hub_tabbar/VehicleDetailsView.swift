@@ -1,6 +1,71 @@
 import SwiftUI
 import FirebaseFirestore
 
+struct vehicleImageLoader: View {
+    let imageUrl: String?
+    
+    var body: some View {
+        if let imageUrl = imageUrl, let url = URL(string: imageUrl), !imageUrl.isEmpty {
+            AsyncImage(url: url) { phase in
+                switch phase {
+                case .empty:
+                    ProgressView()
+                        .onAppear {
+                            print("📷 Loading image...")
+                        }
+                case .success(let image):
+                    image.resizable()
+                        .scaledToFill()
+                        .frame(width: 380, height: 300)
+                        .cornerRadius(25)
+//                        .clipped()
+//                        .overlay(RoundedRectangle(cornerRadius: 25).stroke(Color.gray.opacity(0.3), lineWidth: 2)) 
+//                        .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
+
+
+                        .onAppear {
+                            print("✅ Successfully loaded image")
+                        }
+                case .failure(let error):
+                    placeholderImage
+                        .onAppear {
+                            print("❌ Failed to load image: \(error.localizedDescription)")
+                        }
+                @unknown default:
+                    EmptyView()
+                }
+            }
+            .onAppear {
+                print("📷 Attempting to load image from URL: \(imageUrl)")
+            }
+            .padding(.horizontal)
+        } else {
+            placeholderImage
+                .onAppear {
+                    print("⚠️ No valid image URL provided: \(imageUrl ?? "nil")")
+                }
+        }
+    }
+    
+    private var placeholderImage: some View {
+        Image(systemName: "photo.fill")
+            
+            .resizable()
+            .scaledToFit()
+            .frame(height: 220)
+            .foregroundColor(.gray)
+            .opacity(0.5)
+            .padding()
+            .padding(.horizontal)
+//            .overlay(
+//                RoundedRectangle(cornerRadius: 15)
+//                    .stroke(Color.gray, lineWidth: 3) // Frame for placeholder
+//            )
+            .shadow(color: Color.black.opacity(0.1), radius: 8, x: 4, y: 4)
+    }
+}
+
+
 struct VehicleDetailsView: View {
     var vehicle: Vehicle
     @Environment(\.dismiss) private var dismiss
@@ -26,6 +91,24 @@ struct VehicleDetailsView: View {
         _vehicleType = State(initialValue: vehicle.type)
         _fuelType = State(initialValue: vehicle.fuelType)
         _mileage = State(initialValue: "\(vehicle.mileage)")
+    }
+    
+    func getFormattedImageUrl(_ rawUrl: String?) -> String? {
+        guard let rawUrl = rawUrl, !rawUrl.isEmpty else {
+            print("⚠️ Empty or nil image URL")
+            return nil
+        }
+        
+        // If the URL doesn't start with http or https, it might be a Firebase Storage reference
+        if !rawUrl.hasPrefix("http") {
+            // Assuming you're using Firebase Storage, construct the proper URL
+            // Adjust the bucket URL according to your Firebase project
+            let storageUrl = "https://firebasestorage.googleapis.com/v0/b/YOUR-FIREBASE-PROJECT.appspot.com/o/"
+            let encodedPath = rawUrl.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? rawUrl
+            return "\(storageUrl)\(encodedPath)?alt=media"
+        }
+        
+        return rawUrl
     }
     
     func findAndDeleteVehicle() {
@@ -120,30 +203,27 @@ struct VehicleDetailsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                // Vehicle Image
-                Image("Freightliner_M2_106_6x4_2014_(14240376744)")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(height: 220)
-                    .cornerRadius(15)
-//                    .shadow(radius: 10)
-                    .padding(.horizontal)
+                // Vehicle Image with enhanced logging
+                vehicleImageLoader(imageUrl: getFormattedImageUrl(vehicle.vehicleImage))
+                    .onAppear {
+                        print("🔍 Vehicle image property: \(vehicle.vehicleImage)")
+                    }
                 
                 // Vehicle Details Section
                 Group {
                     DetailField(title: "Vehicle Type", value: vehicleType.rawValue, isEditable: isEditing, onChange: { newValue in
-                                vehicleType = VehicleType(rawValue: newValue) ?? vehicleType
-                                isModified = true
-                            })
-                            DetailField(title: "Model", value: model, isEditable: isEditing, onChange: { newValue in
-                                model = newValue
-                                isModified = true
-                            })
-                            DetailField(title: "Registration Number", value: vehicle.registrationNumber, isEditable: false)
-                            DetailField(title: "Fuel Type", value: fuelType.rawValue, isEditable: isEditing, onChange: { newValue in
-                                fuelType = FuelType(rawValue: newValue) ?? fuelType
-                                isModified = true
-                            })
+                        vehicleType = VehicleType(rawValue: newValue) ?? vehicleType
+                        isModified = true
+                    })
+                    DetailField(title: "Model", value: model, isEditable: isEditing, onChange: { newValue in
+                        model = newValue
+                        isModified = true
+                    })
+                    DetailField(title: "Registration Number", value: vehicle.registrationNumber, isEditable: false)
+                    DetailField(title: "Fuel Type", value: fuelType.rawValue, isEditable: isEditing, onChange: { newValue in
+                        fuelType = FuelType(rawValue: newValue) ?? fuelType
+                        isModified = true
+                    })
                     DetailField(title: "Mileage", value: mileage, isEditable: isEditing, onChange: { newValue in
                         if newValue.allSatisfy({ $0.isNumber }) {
                             mileage = newValue
@@ -153,7 +233,11 @@ struct VehicleDetailsView: View {
                             isInvalidMileage = true
                         }
                     })
-
+                  
+                    
+                    
+                    
+                    
                     if isInvalidMileage {
                         Text("Invalid Mileage. Only numbers allowed.")
                             .foregroundColor(.red)
@@ -161,6 +245,22 @@ struct VehicleDetailsView: View {
                     }
                 }
                 .padding(.horizontal)
+                Text("Rc")
+                    vehicleImageLoader(imageUrl: getFormattedImageUrl(vehicle.rc))
+                        .onAppear {
+                            print("🔍 Vehicle image property: \(vehicle.rc)")
+                        }
+            
+                Text("Insurance")
+                vehicleImageLoader(imageUrl: getFormattedImageUrl(vehicle.insurance))
+                    .onAppear {
+                        print("🔍 Vehicle image property: \(vehicle.rc)")
+                    }
+                Text("pollution")
+                vehicleImageLoader(imageUrl: getFormattedImageUrl(vehicle.pollution))
+                    .onAppear {
+                        print("🔍 Vehicle image property: \(vehicle.rc)")
+                    }
                 
                 // Buttons
                 VStack {
@@ -178,7 +278,7 @@ struct VehicleDetailsView: View {
                                 .shadow(radius: 5)
                         } .disabled(!isModified)
                             .opacity((isModified) ? 1 : 0.5)
-                        .padding(.horizontal)
+                            .padding(.horizontal)
                     } else {
                         Button(action: {
                             showConfirmationDialog = true
@@ -193,7 +293,6 @@ struct VehicleDetailsView: View {
                             .padding()
                             .background(Color.red.opacity(0.1))
                             .cornerRadius(10)
-//                            .shadow(radius: 5)
                         }
                         .padding(.horizontal)
                     }
@@ -221,7 +320,7 @@ struct VehicleDetailsView: View {
                 dismiss()
             }
         } message: {
-            Text(isEditing ? "Vehicle updated successfully" : "Vehicle updated successfully")
+            Text(isEditing ? "Vehicle updated successfully" : "Vehicle deleted successfully")
         }
         .confirmationDialog(
             "Delete Vehicle",
@@ -239,7 +338,7 @@ struct VehicleDetailsView: View {
     }
 }
 
-// Updated DetailField component
+// DetailField component remains unchanged
 struct DetailField: View {
     let title: String
     let isEditable: Bool
@@ -266,7 +365,6 @@ struct DetailField: View {
                     .padding(10)
                     .background(Color.white)
                     .cornerRadius(10)
-//                    .shadow(radius: 5)
                     .onChange(of: localText) { newValue in
                         onChange?(newValue)
                     }
@@ -278,35 +376,10 @@ struct DetailField: View {
                     .padding(10)
                     .background(Color.white)
                     .cornerRadius(10)
-//                    .shadow(radius: 5)
             }
         }
     }
 }
-
-// Document View Component
-struct DocumentView: View {
-    let title: String
-    let imageName: UIImage
-    
-    var body: some View {
-        VStack(alignment: .leading) {
-            Text(title)
-                .font(.headline)
-                .foregroundColor(.primary)
-                .padding(.horizontal)
-            
-            Image(uiImage: imageName)
-                .resizable()
-                .scaledToFit()
-                .frame(height: 180)
-                .cornerRadius(10)
-//                .shadow(radius: 8)
-                .padding(.horizontal)
-        }
-    }
-}
-
 #Preview {
     VehicleDetailsView(vehicle: Vehicle(type: .truck, model: "Toyota RAV4", registrationNumber: "KA01 AB234", fuelType: .petrol, mileage: 15000, rc: "rcImage", vehicleImage: "vehicleImage", insurance: "insuranceImage", pollution: "pollutionImage", status: true))
 }
