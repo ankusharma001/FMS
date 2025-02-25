@@ -16,10 +16,10 @@ struct MainTabView: View {
                 Label("Home", systemImage: "house.fill")
             }
             
-            NavigationViewScreen()
+            TripLogsView()
                 .tabItem {
-                    Image(systemName: "map")
-                    Text("Navigation")
+                    Image(systemName: "list.bullet.clipboard")
+                    Text("Trip Logs")
                 }
             
             ProfileView() // ✅ Replacing Text with ProfileView
