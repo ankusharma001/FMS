@@ -8,6 +8,7 @@
 import FirebaseFirestore
 import Foundation
 
+
 enum Role: String, Codable {
     case fleet = "Fleet Manager"
     case driver = "Driver"
