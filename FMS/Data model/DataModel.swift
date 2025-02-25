@@ -114,11 +114,11 @@ class Driver: User {
 
 class Maintenance: User {
     var maintenanceIndex: Int
-    var assignedVehicles: [String]?
+    var assignedVehicles: [String]
 
-    init(name: String, email: String, phone: String, maintenanceIndex: Int, assignedVehicles: [String]?) {
+    init(name: String, email: String, phone: String, maintenanceIndex: Int) {
         self.maintenanceIndex = maintenanceIndex
-        self.assignedVehicles = assignedVehicles
+        self.assignedVehicles = []
         super.init(name: name, email: email, phone: phone, role: .maintenance)
     }
 
@@ -126,7 +126,7 @@ class Maintenance: User {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
         self.maintenanceIndex = try container.decode(Int.self, forKey: .maintenanceIndex)
-        self.assignedVehicles = try container.decodeIfPresent([String].self, forKey: .assignedVehicles)
+        self.assignedVehicles = try container.decodeIfPresent([String].self, forKey: .assignedVehicles) ?? []
 
         let name = try container.decode(String.self, forKey: .name)
         let email = try container.decode(String.self, forKey: .email)
@@ -138,7 +138,6 @@ class Maintenance: User {
     enum CodingKeys: String, CodingKey {
         case name, email, phone, maintenanceIndex, assignedVehicles
     }
-    
 }
 
 

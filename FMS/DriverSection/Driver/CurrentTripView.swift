@@ -13,6 +13,7 @@ struct CurrentTripView: View {
     @State private var tripDateToday = "Loading..."
     @State private var distance = "Loading..."
     @State private var driverName = "Loading..."
+    @State private var VehicleId = "Loading..."
     @State private var tripDate: Date? = nil
     @State private var isCurrentTrip = false
 
@@ -45,7 +46,7 @@ struct CurrentTripView: View {
                 Divider()
                 
                 if isCurrentTrip {
-                    NavigationLink(destination: TripDetailView(startLocation: fromTrip, endLocation: endLocation, distance: distance, vehicleModel: Vehicle, driverName: driverName, tripDate: tripDateToday, vehicleType: vehicleType)) {
+                    NavigationLink(destination: TripDetailView(startLocation: fromTrip, endLocation: endLocation, distance: distance, vehicleModel: Vehicle, driverName: driverName, tripDate: tripDateToday, vehicleType: vehicleType,vehicleID: VehicleId)) {
                         TripActionButton(
                             title: "Start Trip",
                             systemImage: "play.fill",
@@ -101,10 +102,12 @@ struct CurrentTripView: View {
                         self.Vehicle = vehicleData["model"] as? String ?? "Unknown Vehicle"
                         self.Vehiclerc = vehicleData["registrationNumber"] as? String ?? "Unknown Registration"
                         self.vehicleType = vehicleData["type"] as? String ?? "Unknown Type"
+                        self.VehicleId = vehicleData["id"] as? String ?? "Unknown Type"
                     } else {
                         self.Vehicle = "No Vehicle Assigned"
                         self.Vehiclerc = "No Vehicle Assigned"
                         self.vehicleType = "No Vehicle Assigned"
+                        self.VehicleId = "No Vehicle Assigned"
                     }
                     
                     // Extract driver details
@@ -138,6 +141,7 @@ struct CurrentTripView: View {
                     } else {
                         self.tripDateToday = "Unknown"
                     }
+//                    print("Vehicle: " + VehicleId)
                 }
             }
     }

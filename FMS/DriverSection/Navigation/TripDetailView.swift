@@ -137,6 +137,8 @@ struct TripDetailView: View {
     @State var driverName: String
     @State var tripDate: String
     @State var vehicleType: String
+    @State var vehicleID: String
+    @State private var navigateToHome = false
     
     
     let trip = TripDetails(
@@ -226,10 +228,21 @@ struct TripDetailView: View {
                 .padding()
                 
                 Spacer()
+                NavigationStack{
                 HStack {
                     Button(action: {
                         print("End Trip button tapped")
+                        navigateToHome = true
+                        AssignMaintenance.shared.handleEndTrip(for: vehicleID){
+                            result in switch result{
+                            case .success(let message):
+                                print(message)
+                            case .failure(let error):
+                                print("Error: \(error.localizedDescription)")
+                            }
+                        }
                         // Add logic for starting trip
+                        
                     }) {
                         Text("End Trip")
                             .font(.headline)
@@ -239,6 +252,10 @@ struct TripDetailView: View {
                             .foregroundColor(.white)
                             .cornerRadius(10)
                             .padding(.leading,10)
+                    }
+                    .navigationDestination(isPresented: $navigateToHome){
+                        HomeView()
+                    }
                     }
                     Button(action: {
                         print("SOS button tapped - Starting process")
@@ -660,7 +677,8 @@ struct TripDetailView_Previews: PreviewProvider {
             vehicleModel: "Ford Transit",
             driverName: "John Smith",
             tripDate: "Feb 25, 2025",
-            vehicleType: "Model XZ2025"
+            vehicleType: "Model XZ2025",
+            vehicleID: "12322564245"
         )
     }
 }
