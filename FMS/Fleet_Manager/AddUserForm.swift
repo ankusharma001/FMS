@@ -9,6 +9,7 @@ import SwiftUI
 import Cloudinary
 import SwiftSMTP
 
+
 struct FMSCloudinaryConfig {
     static let cloudName = "dztmc60fg"
     static let uploadPreset = "FMS-iNFOSYS"
@@ -192,12 +193,9 @@ struct AddUserView: View {
                                         }
                                         .padding(5)
                                         .background(Color.clear)
-                                        .frame(height: 47)
-                                        .listRowBackground(Color.clear)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 8)
-                                                .stroke(Color.gray, lineWidth: 1)
-                                        )
+                                        .frame(height: 4)
+                                        .listRowBackground(Color.white)
+                                        
                                         .frame(width: 361)
                                     
                                     if let error = nameError {
@@ -212,12 +210,8 @@ struct AddUserView: View {
                                 .textInputAutocapitalization(.never)
                                 .padding(5)
                                 .background(Color.clear)
-                                .frame(height: 47)
-                                .listRowBackground(Color.clear)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .stroke(Color.gray, lineWidth: 1)
-                                )
+                                .frame(height: 4)
+                                .listRowBackground(Color.white)
                                 .frame(width:361)
                         }
                         
@@ -236,13 +230,9 @@ struct AddUserView: View {
                                 }
                                 .keyboardType(.phonePad)
                                 .padding(5)
-                                .background(Color.clear)
-                                .frame(height: 47)
-                                .listRowBackground(Color.clear)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .stroke(Color.gray, lineWidth: 1)
-                                )
+                                .background(Color.white)
+                                .frame(height: 4)
+                                .listRowBackground(Color.white)
                                 .frame(width:361)
                             if let error = phoneError {
                                 Text(error)
@@ -282,12 +272,8 @@ struct AddUserView: View {
                                     }
                                     .padding(5)
                                     .background(Color.clear)
-                                    .frame(height: 47)
-                                    .listRowBackground(Color.clear)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .stroke(Color.gray, lineWidth: 1)
-                                    )
+                                    .frame(height: 4)
+                                    .listRowBackground(Color.white)
                                     .frame(width:361)
                                 if let error = nameError {
                                     Text(error)
@@ -301,13 +287,10 @@ struct AddUserView: View {
                                 .keyboardType(.emailAddress)
                                 .textInputAutocapitalization(.never)
                                 .padding(5)
-                                .background(Color.clear)
-                                .frame(height: 47)
-                                .listRowBackground(Color.clear)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .stroke(Color.gray, lineWidth: 1)
-                                )
+                                .background(Color.white)
+                                .frame(height: 4)
+                                .listRowBackground(Color.white)
+                             
                                 .frame(width:361)
                         }
                         
@@ -326,13 +309,9 @@ struct AddUserView: View {
                                 }
                                 .keyboardType(.phonePad)
                                 .padding(5)
-                                .background(Color.clear)
-                                .frame(height: 47)
-                                .listRowBackground(Color.clear)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .stroke(Color.gray, lineWidth: 1)
-                                )
+                                .background(Color.white)
+                                .frame(height: 4)
+                                .listRowBackground(Color.white)
                                 .frame(width:361)
                             if let error = phoneError {
                                 Text(error)
@@ -399,13 +378,10 @@ struct AddUserView: View {
                                         }
                                     }
                                     .padding(5)
-                                    .background(Color.clear)
-                                    .frame(height: 47)
-                                    .listRowBackground(Color.clear)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .stroke(Color.gray, lineWidth: 1)
-                                    )
+                                    .background(Color.white)
+                                    .frame(height: 4)
+                                    .listRowBackground(Color.white)
+                                   
                                     .frame(width:361)
                                 if let error = nameError {
                                     Text(error)
@@ -419,13 +395,10 @@ struct AddUserView: View {
                                 .keyboardType(.emailAddress)
                                 .textInputAutocapitalization(.never)
                                 .padding(5)
-                                .background(Color.clear)
-                                .frame(height: 47)
-                                .listRowBackground(Color.clear)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .stroke(Color.gray, lineWidth: 1)
-                                )
+                                .background(Color.white)
+                                .frame(height: 4)
+                                .listRowBackground(Color.white)
+                             
                                 .frame(width:361)
                         }
                         
@@ -444,13 +417,10 @@ struct AddUserView: View {
                                 }
                                 .keyboardType(.phonePad)
                                 .padding(5)
-                                .background(Color.clear)
-                                .frame(height: 47)
-                                .listRowBackground(Color.clear)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .stroke(Color.gray, lineWidth: 1)
-                                )
+                                .background(Color.white)
+                                .frame(height: 4)
+                                .listRowBackground(Color.white)
+                               
                                 .frame(width:361)
                             if let error = phoneError {
                                 Text(error)

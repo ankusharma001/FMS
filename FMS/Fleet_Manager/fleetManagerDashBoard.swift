@@ -89,13 +89,13 @@ struct DashboardView: View {
                     
                     HStack(spacing: 12) {
                         NavigationLink(destination: AddNewTripView()) {
-                            ActionButton(icon: "map", title: "Create Trip", color: .blue)
+                            ActionButton(icon: "map", title: "Create Trip", color: Color(hex : "3B86F6"))
                         }
                         NavigationLink(destination: AddNewVehicle()) {
-                            ActionButton(icon: "truck.box.fill", title: "Add Vehicle", color: .blue)
+                            ActionButton(icon: "truck.box.fill", title: "Add Vehicle", color: Color(hex : "6366F1"))
                         }
                         NavigationLink(destination: AddUserForm()) {
-                            ActionButton(icon: "person.badge.plus", title: "Add User", color: .purple)
+                            ActionButton(icon: "person.badge.plus", title: "Add User", color: Color(hex : "A855F7"))
                         }
                     }
                     .padding(.horizontal)
@@ -104,7 +104,7 @@ struct DashboardView: View {
                         .font(.headline)
                         .padding(.horizontal)
                     
-                    ForEach(trips, id: \.id) { trip in
+                    ForEach(trips.prefix(3), id: \.id) { trip in
                         TripCardView(trip: trip)
                             .padding(.bottom)
                     }
@@ -386,4 +386,25 @@ struct MainteneceInfoCard: View {
 // MARK: - Preview
 #Preview {
     FleetControlDashboard()
+}
+extension Color {
+    init(hex: String) {
+        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        var int: UInt64 = 0
+        Scanner(string: hex).scanHexInt64(&int)
+        let r, g, b: Double
+        let a: Double = 1.0
+
+        if hex.count == 6 {
+            r = Double((int >> 16) & 0xFF) / 255.0
+            g = Double((int >> 8) & 0xFF) / 255.0
+            b = Double(int & 0xFF) / 255.0
+        } else {
+            r = 1
+            g = 1
+            b = 1
+        }
+        
+        self.init(red: r, green: g, blue: b, opacity: a)
+    }
 }
