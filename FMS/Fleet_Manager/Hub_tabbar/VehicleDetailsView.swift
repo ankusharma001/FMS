@@ -344,6 +344,7 @@ struct DetailField: View {
     let isEditable: Bool
     var onChange: ((String) -> Void)?
     
+    
     @State private var localText: String
     
     init(title: String, value: String, isEditable: Bool, onChange: ((String) -> Void)? = nil) {

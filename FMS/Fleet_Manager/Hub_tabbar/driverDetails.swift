@@ -225,13 +225,13 @@ struct AddDriverView: View {
                            .disabled(!isEditing)
                        }
                 
-                Section(header: Text("Type of Vehicle")) {
+                Section(header: Text("Vehicle Preference")) {
                     TextField("Enter Vehicle Type", text: $selectedVehicle)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .disabled(!isEditing)
                 }
                 
-                Section(header: Text("Specialization in Terrain Type")) {
+                Section(header: Text("Terrain Preference")) {
                     TextField("Enter Terrain Type", text: $selectedTerrain)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .disabled(!isEditing)
