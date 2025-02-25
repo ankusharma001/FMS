@@ -51,6 +51,7 @@ struct CurrentTripView: View {
                             systemImage: "play.fill",
                             bgColor: Color.green.opacity(0.2),
                             fgColor: .green
+                            
                         )
                     }
                 }

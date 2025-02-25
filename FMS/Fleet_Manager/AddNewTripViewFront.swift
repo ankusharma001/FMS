@@ -307,11 +307,11 @@ struct AddNewTripView: View {
     @StateObject private var toLocationVM = LocationSearchViewModel()
     
     var isSaveEnabled: Bool {
-           return !fromLocation.isEmpty &&
-                  !toLocation.isEmpty &&
-                  !selectedGeoArea.isEmpty &&
-                  deliveryDate > Date()
-    }
+            return !fromLocation.isEmpty &&
+                   !toLocation.isEmpty &&
+                   !selectedGeoArea.isEmpty &&
+                   deliveryDate >= Calendar.current.startOfDay(for: Date())
+        }
     
     var body: some View {
         VStack {

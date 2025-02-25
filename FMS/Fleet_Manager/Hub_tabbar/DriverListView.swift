@@ -169,6 +169,8 @@ struct DriverRow: View {
         
     }
 }
+
+
 #Preview{
     DriverListView()
 }
