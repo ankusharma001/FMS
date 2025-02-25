@@ -112,6 +112,35 @@ class Driver: User {
     }
 }
 
+class Maintenance: User {
+    var maintenanceIndex: Int
+    var assignedVehicles: [String]?
+
+    init(name: String, email: String, phone: String, maintenanceIndex: Int, assignedVehicles: [String]?) {
+        self.maintenanceIndex = maintenanceIndex
+        self.assignedVehicles = assignedVehicles
+        super.init(name: name, email: email, phone: phone, role: .maintenance)
+    }
+
+    required init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        self.maintenanceIndex = try container.decode(Int.self, forKey: .maintenanceIndex)
+        self.assignedVehicles = try container.decodeIfPresent([String].self, forKey: .assignedVehicles)
+
+        let name = try container.decode(String.self, forKey: .name)
+        let email = try container.decode(String.self, forKey: .email)
+        let phone = try container.decode(String.self, forKey: .phone)
+
+        super.init(name: name, email: email, phone: phone, role: .maintenance)
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case name, email, phone, maintenanceIndex, assignedVehicles
+    }
+    
+}
+
 
 class Vehicle: Codable, Identifiable {
     @DocumentID var id: String? = UUID().uuidString  // Firestore Document ID
@@ -206,7 +235,22 @@ class Trip: Identifiable, Codable {
         self.TripStatus = TripStatus
         self.assignedVehicle = assignedVehicle
     }
+//    func completeTrip(maintenanceList: inout [Maintenance]) {
+//            guard let vehicle = assignedVehicle else { return }
+//
+//            // Update total distance
+//            vehicle.totalDistance += Int(distance)
+//
+//            print("Vehicle \(vehicle.registrationNumber) has traveled \(vehicle.totalDistance) km.")
+//
+//            if vehicle.totalDistance >= 100 {
+//                scheduleMaintenance(vehicle: vehicle, maintenanceList: &maintenanceList)
+//            }
+//        }
+   
 }
+
+
 
 
 

@@ -342,11 +342,11 @@ struct AddUserView: View {
                         }
                         
                         
-                        Section(header: Text("Type of Vehicle").font(.headline).padding(.leading, -22)) {
+                        Section(header: Text("Vehicle Preference").font(.headline).padding(.leading, -22)) {
                             vehicleTypePicker
                         }
                         
-                        Section(header: Text("Specialization in Geo Areas").font(.headline).padding(.leading, -22)) {
+                        Section(header: Text("Terrain Preference").font(.headline).padding(.leading, -22)) {
                             geoAreaPicker
                         }
                         Section {

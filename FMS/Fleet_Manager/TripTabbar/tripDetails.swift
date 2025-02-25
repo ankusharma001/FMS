@@ -325,8 +325,8 @@ struct TripDetailsView: View {
 
         vehicleRef.getDocument { document, error in
                if let document = document, document.exists {
-                   if let currentDistance = document.data()?["totalDistance"] as? Double {
-                       let newDistance = currentDistance + Double(updatedTrip.distance * 2);
+                   if let currentDistance = document.data()?["totalDistance"] as? Int {
+                       let newDistance = currentDistance + Int(updatedTrip.distance * 2);
                        
                        vehicleRef.updateData(["totalDistance": newDistance]) { error in
                            if let error = error {
@@ -422,7 +422,7 @@ struct TripDetailsView: View {
                 successMessage = "Failed to Create trip: \(error.localizedDescription)"
             } else {
                 var updatedTripCopy = self.updatedTrip
-                updatedTripCopy.TripStatus = .inprogress
+                updatedTripCopy.TripStatus = .scheduled
                 
                 self.updatedTrip = updatedTripCopy
                 successMessage = "Trip Created successfully!"
