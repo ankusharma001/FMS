@@ -9,6 +9,7 @@ struct TripDetailsView: View {
     @State private var showSuccessMessage = false
     @State private var successMessage = ""
     @State private var updatedTrip: Trip
+    @Environment(\.presentationMode) var presentationMode
     
     init(trip: Trip) {
         self.trip = trip
@@ -422,12 +423,18 @@ struct TripDetailsView: View {
                 successMessage = "Failed to Create trip: \(error.localizedDescription)"
             } else {
                 var updatedTripCopy = self.updatedTrip
-                updatedTripCopy.TripStatus = .scheduled
+                updatedTripCopy.TripStatus = .inprogress
                 
                 self.updatedTrip = updatedTripCopy
                 successMessage = "Trip Created successfully!"
+                
             }
             showSuccessMessage = true
+            
+            DispatchQueue.main.async {
+                           // Dismiss the current view and navigate back to the previous one (Dashboard)
+                           self.presentationMode.wrappedValue.dismiss()
+                       }
         }
     }
     private func removeDriverAndVehicle() {
