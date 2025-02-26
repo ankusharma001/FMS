@@ -80,18 +80,49 @@ class LoginViewModel: ObservableObject {
         }
     
     func createMaintenanceAccount(email: String, password: String, name: String, phone: String) {
-            isLoading = true
-            errorMessage = nil
-            
-            
-            let userDataDict = ["email": email, "name": name, "phone": phone, "password": password, "role": Role.maintenance.rawValue] as [String : Any]
-            let database = Firestore.firestore()
-            let newUserCollectionRef = database.collection("users").document(UUID().uuidString)
-            newUserCollectionRef.setData(userDataDict)
-            
-            self.isLoading = false
-            
-        }
+        isLoading = true
+        errorMessage = nil
+        
+        let database = Firestore.firestore()
+        
+        // First, check how many maintenance accounts already exist
+        database.collection("users")
+            .whereField("role", isEqualTo: Role.maintenance.rawValue)
+            .getDocuments { (querySnapshot, error) in
+                if let error = error {
+                    self.errorMessage = "Error getting maintenance count: \(error.localizedDescription)"
+                    self.isLoading = false
+                    return
+                }
+                
+                // Calculate the new maintenance index (count + 1)
+                let newMaintenanceIndex = (querySnapshot?.documents.count ?? 0) + 1
+                
+                // Create the user data dictionary with all required fields
+                let userDataDict = [
+                    "email": email,
+                    "name": name,
+                    "phone": phone,
+                    "password": password,
+                    "role": Role.maintenance.rawValue,
+                    "maintenanceIndex": newMaintenanceIndex,
+                    "assignedVehicles": []
+                ] as [String: Any]
+                
+                // Create the new user document
+                let newUserCollectionRef = database.collection("users").document(UUID().uuidString)
+                newUserCollectionRef.setData(userDataDict) { error in
+                    if let error = error {
+                        self.errorMessage = "Error creating account: \(error.localizedDescription)"
+                        self.isLoading = false
+                        return
+                    }
+                    
+                    // Account created successfully
+                    self.isLoading = false
+                }
+            }
+    }
     
     func createDriverAccount(name: String, email: String, password: String, phone: String, experience: Experience,
                              license: String, geoPreference: GeoPreference, vehiclePreference: VehicleType) {
