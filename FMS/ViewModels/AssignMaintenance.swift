@@ -88,7 +88,8 @@ class AssignMaintenance {
                 // Update the vehicle's maintenance status
                 vehicleRef.updateData([
                     "needsMaintenance": true,
-                    "assignedMaintenancePersonnelID": assignedPersonnelID
+                    "assignedMaintenancePersonnelID": assignedPersonnelID,
+                    "status": false
                 ]) { error in
                     if let error = error {
                         completion(.failure(NSError(domain: "FirestoreService", code: 500, userInfo: [
