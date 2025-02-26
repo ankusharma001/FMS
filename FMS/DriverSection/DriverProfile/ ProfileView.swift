@@ -327,8 +327,8 @@ struct ProfileView: View {
                     email = userData["email"] as? String ?? email
                     name = userData["name"] as? String ?? name
                     experience = userData["experience"] as? String ?? experience
-                    vehicleType = userData["selectedVehicle"] as? String ?? vehicleType
-                    specializedTerrain = userData["selectedTerrain"] as? String ?? specializedTerrain
+                    vehicleType = userData["vehiclePreference"] as? String ?? vehicleType
+                    specializedTerrain = userData["geoPreference"] as? String ?? specializedTerrain
                 }
             } else {
                 print("User not found")

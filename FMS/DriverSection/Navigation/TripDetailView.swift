@@ -14,6 +14,9 @@ import CoreLocation
 class FirestoreManager {
     static let shared = FirestoreManager()
     private let db = Firestore.firestore()
+    
+
+
 
     // Fetch the currently logged-in driver using userUUID
     func getCurrentDriver(completion: @escaping (Driver?) -> Void) {
@@ -138,6 +141,8 @@ struct TripDetailView: View {
     @State var tripDate: String
     @State var vehicleType: String
     @State var vehicleID: String
+    @State var tripID: String   // ✅ Added trip ID
+      @State var userID: String
     @State private var navigateToHome = false
     
     
@@ -233,6 +238,7 @@ struct TripDetailView: View {
                     Button(action: {
                         print("End Trip button tapped")
                         navigateToHome = true
+                        endTrip(tripID: tripID, driverID: userID, vehicleID: vehicleID)
                         AssignMaintenance.shared.handleEndTrip(for: vehicleID){
                             result in switch result{
                             case .success(let message):
@@ -251,10 +257,12 @@ struct TripDetailView: View {
                             .background(Color.blue)
                             .foregroundColor(.white)
                             .cornerRadius(10)
-                            .padding(.leading,10)
+                            .padding(.leading,7)
                     }
                     .navigationDestination(isPresented: $navigateToHome){
-                        HomeView()
+                        MainTabView()
+                            .navigationBarBackButtonHidden(true) // Hides the back button
+                                   .interactiveDismissDisabled(true)
                     }
                     }
                     Button(action: {
@@ -343,6 +351,63 @@ struct TripDetailView: View {
                 .background(Color(.systemGroupedBackground))
             }}
     }
+
+
+    func endTrip(tripID: String, driverID: String, vehicleID: String) {
+        let db = Firestore.firestore()
+        
+        guard !tripID.isEmpty, !driverID.isEmpty, !vehicleID.isEmpty else {
+            print("❌ Error: Missing tripID, driverID, or vehicleID")
+            return
+        }
+
+        print("🔍 Ending trip: \(tripID) | Driver: \(driverID) | Vehicle: \(vehicleID)")
+
+        let dispatchGroup = DispatchGroup()
+        
+        // Step 1: Update Trip Status
+        dispatchGroup.enter()
+        db.collection("trips").document(tripID).updateData(["TripStatus": "Completed"]) { error in
+            if let error = error {
+                print("❌ Error updating trip status: \(error.localizedDescription)")
+            } else {
+                print("✅ Trip status updated to 'Completed'")
+            }
+            dispatchGroup.leave()
+        }
+
+        // Step 2: Update Driver Status to Available (Boolean)
+        dispatchGroup.enter()
+        db.collection("users").document(driverID).updateData(["status": true]) { error in
+            if let error = error {
+                print("❌ Error updating driver status: \(error.localizedDescription)")
+            } else {
+                print("✅ Driver status updated to 'Available'")
+            }
+            dispatchGroup.leave()
+        }
+
+        // Step 3: Update Vehicle Status to Available (Boolean)
+        dispatchGroup.enter()
+        db.collection("vehicles").document(vehicleID).updateData(["status": true]) { error in
+            if let error = error {
+                print("❌ Error updating vehicle status: \(error.localizedDescription)")
+            } else {
+                print("✅ Vehicle status updated to 'Available'")
+            }
+            dispatchGroup.leave()
+        }
+
+        // Notify when all updates are done
+        dispatchGroup.notify(queue: .main) {
+            print("🚀 All trip-related updates completed successfully!")
+        }
+    }
+
+
+
+
+
     
     // **Row for Start & End Location**
     private func tripInfoRow(icon: String, title: String, value: String) -> some View {
@@ -678,7 +743,10 @@ struct TripDetailView_Previews: PreviewProvider {
             driverName: "John Smith",
             tripDate: "Feb 25, 2025",
             vehicleType: "Model XZ2025",
-            vehicleID: "12322564245"
+            vehicleID: "12322564245",
+            tripID: "SAMPLE_TRIP_ID",  // Replace with actual trip ID
+            userID: "SAMPLE_USER_ID"   // Replace with actual user ID
         )
+
     }
 }

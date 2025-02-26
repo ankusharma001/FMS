@@ -174,7 +174,7 @@ struct LoginView: View {
                         FleetControlDashboard()
                             .navigationBarBackButtonHidden()
                     case .maintenance:
-                        MainTabView()
+                        MaintenanceTabView()
                             .navigationBarBackButtonHidden()
                     }
                 }

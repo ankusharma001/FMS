@@ -1,5 +1,5 @@
 import SwiftUI
-import FirebaseFirestore
+import Firebase
 
 struct CurrentTripView: View {
     @Environment(\.dismiss) private var dismiss
@@ -16,63 +16,131 @@ struct CurrentTripView: View {
     @State private var VehicleId = "Loading..."
     @State private var tripDate: Date? = nil
     @State private var isCurrentTrip = false
+    @State private var tripID: String? = nil
+    @State private var isTripStarted: Bool = false
+    @State private var tripStatusFromDB: String = "Unknown" // Store trip status from Firestore
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(isCurrentTrip ? "Current Trip" : "Upcoming Trip")
-                .font(.headline)
-                .padding(.horizontal)
-
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Image(systemName: "truck.box.fill")
-                        .foregroundColor(.blue)
-                        .font(.system(size: 24))
+            if tripID != nil && tripStatusFromDB == "In Progress" {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Current Trip")
+                        .font(.headline)
+                        .padding(.horizontal)
                     
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(Vehicle).font(.headline)
-                        Spacer()
-                        Text(Vehiclerc).font(.subheadline)
-                    }
-                }
-                
-                Divider()
-                
-                VStack(alignment: .leading, spacing: 6) {
-                    tripDetailRow(title: "Start Location", value: fromTrip, color: .blue)
-                    tripDetailRow(title: "To", value: endLocation, color: .gray)
-                }
-                
-                Divider()
-                
-                if isCurrentTrip {
-                    NavigationLink(destination: TripDetailView(startLocation: fromTrip, endLocation: endLocation, distance: distance, vehicleModel: Vehicle, driverName: driverName, tripDate: tripDateToday, vehicleType: vehicleType,vehicleID: VehicleId)) {
-                        TripActionButton(
-                            title: "Start Trip",
-                            systemImage: "play.fill",
-                            bgColor: Color.green.opacity(0.2),
-                            fgColor: .green
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            Image(systemName: "truck.box.fill")
+                                .foregroundColor(.blue)
+                                .font(.system(size: 24))
                             
-                        )
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(Vehicle).font(.headline)
+                                Spacer()
+                                Text(Vehiclerc).font(.subheadline)
+                            }
+                        }
+                        
+                        Divider()
+                        
+                        VStack(alignment: .leading, spacing: 6) {
+                            tripDetailRow(title: "Start Location", value: fromTrip, color: .blue)
+                            tripDetailRow(title: "To", value: endLocation, color: .gray)
+                        }
+                        
+                        Divider()
+                        
+                        NavigationLink(
+                            destination: TripDetailView(
+                                startLocation: fromTrip,
+                                endLocation: endLocation,
+                                distance: distance,
+                                vehicleModel: Vehicle,
+                                driverName: driverName,
+                                tripDate: tripDateToday,
+                                vehicleType: vehicleType,
+                                vehicleID: VehicleId.isEmpty ? "Unknown Vehicle ID" : VehicleId,
+                                tripID: tripID ?? "Unknown Trip ID",
+                                userID: userUUID ?? "Unknown User ID"
+                            )
+                        ) {
+                            TripActionButton(
+                                title: isTripStarted ? "Continue" : "Start Trip",
+                                systemImage: isTripStarted ? "arrow.forward.circle.fill" : "play.fill",
+                                bgColor: isTripStarted ? Color.orange.opacity(0.2) : Color.green.opacity(0.2),
+                                fgColor: isTripStarted ? .orange : .green
+                            )
+                        }
+                        .disabled(tripID == nil || VehicleId == "Loading..." || VehicleId.isEmpty)
+                        .simultaneousGesture(TapGesture().onEnded {
+                            guard let tripID = tripID, !tripID.isEmpty else {
+                                print("❌ Error: tripID is missing")
+                                return
+                            }
+                            print("🚀 Navigating to TripDetailView with VehicleID: \(VehicleId) and UserID: \(userUUID ?? "No User")")
+                            
+                            if VehicleId.isEmpty {
+                                VehicleId = "Unknown Vehicle ID"
+                            }
+                            if userUUID == nil {
+                                userUUID = "Unknown User ID"
+                            }
+                            
+                            isTripStarted = true
+                            UserDefaults.standard.set(true, forKey: "isTripStarted_\(tripID)")
+                        })
                     }
+                    .padding()
+                    .background(Color.white)
+                    .cornerRadius(10)
+                    .shadow(color: .gray.opacity(0.2), radius: 5, x: 0, y: 2)
+                    .padding(.horizontal)
                 }
             }
-            .padding()
-            .background(Color.white)
-            .cornerRadius(10)
-            .shadow(color: .gray.opacity(0.2), radius: 5, x: 0, y: 2)
-            .padding(.horizontal)
+            else if tripID == nil || tripStatusFromDB == "Completed"
+            {
+                VStack {
+                    Spacer() // Push content to center vertically
+                    
+                    VStack(alignment: .center, spacing: 16) {
+                        Text("NO Trips")
+                            .font(.largeTitle)
+                            .fontWeight(.bold)
+                            .multilineTextAlignment(.center)
+                        
+                        Image(systemName: "truck.box.fill")
+                            .foregroundColor(.blue)
+                            .font(.system(size: 50)) // Increased icon size
+                        
+                        // Vertical line
+                        Rectangle()
+                            .frame(width: 2, height: 40) // Thin vertical line
+                            .foregroundColor(.gray)
+                        
+                        Text("No Available Trips")
+                            .font(.title3)
+                            .foregroundColor(.gray)
+                    }
+                    
+                    Spacer() // Push content to center vertically
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity) // Ensure full-screen alignment
+                .multilineTextAlignment(.center)
+
+                
+            }
+            
         }
-        .padding(.top, 10)
-        .background(Color(.systemGray6))
         .onAppear {
+            print("🚀 Loading CurrentTripView")
             fetchTrip()
         }
+    
     }
-        
-    private func fetchTrip() {
+    
+    func fetchTrip() {
         guard let userUUID = userUUID else {
-            print("No user UUID found")
+            print("❌ No user UUID found")
             return
         }
 
@@ -81,86 +149,70 @@ struct CurrentTripView: View {
             .whereField("assignedDriver.id", isEqualTo: userUUID)
             .getDocuments { snapshot, error in
                 if let error = error {
-                    print("Error fetching trips: \(error.localizedDescription)")
+                    print("❌ Error fetching trips: \(error.localizedDescription)")
                     return
                 }
 
-                guard let documents = snapshot?.documents, let tripData = documents.first?.data() else {
-                    print("No trips assigned to this user")
+                guard let documents = snapshot?.documents, !documents.isEmpty else {
+                    print("⚠️ No trips available")
+                    DispatchQueue.main.async {
+                        self.tripStatusFromDB = "No Trips"
+                        self.isCurrentTrip = false
+                        self.tripID = nil
+                    }
                     return
                 }
 
+                for document in documents {
+                    let tripData = document.data()
+                    let tripStatus = tripData["TripStatus"] as? String ?? "Unknown"
+
+                    print("📊 Trip Status from DB: \(tripStatus)")
+
+                    if tripStatus == "In Progress" {
+                        DispatchQueue.main.async {
+                            self.tripID = document.documentID
+                            self.fromTrip = tripData["startLocation"] as? String ?? "Unknown"
+                            self.endLocation = tripData["endLocation"] as? String ?? "Unknown"
+                            self.tripStatusFromDB = tripStatus // ✅ Update trip status
+                            self.isCurrentTrip = true
+                            
+                            if let timestamp = tripData["tripDate"] as? Timestamp {
+                                self.tripDate = timestamp.dateValue()
+                            }
+
+                            if let vehicleData = tripData["assignedVehicle"] as? [String: Any] {
+                                self.Vehicle = vehicleData["model"] as? String ?? "Unknown Vehicle"
+                                self.Vehiclerc = vehicleData["registrationNumber"] as? String ?? "Unknown Registration"
+                                self.vehicleType = vehicleData["type"] as? String ?? "Unknown Type"
+                                self.VehicleId = vehicleData["id"] as? String ?? "Unknown Vehicle ID"
+                            }
+
+                            if let driverData = tripData["assignedDriver"] as? [String: Any] {
+                                self.driverName = driverData["name"] as? String ?? "Unknown Driver"
+                            }
+
+                            self.estimatedTime = tripData["estimatedTime"] as? String ?? "Unknown"
+                            self.distance = tripData["distance"] as? String ?? "Unknown"
+
+                            if let tripID = self.tripID {
+                                self.isTripStarted = UserDefaults.standard.bool(forKey: "isTripStarted_\(tripID)")
+                            }
+                        }
+                        return  // ✅ Stop after finding the first "In Progress" trip
+                    }
+                }
+
+                // ❌ No "In Progress" trips found
                 DispatchQueue.main.async {
-                    self.fromTrip = tripData["startLocation"] as? String ?? "Unknown"
-                    self.endLocation = tripData["endLocation"] as? String ?? "Unknown"
-                    if let timestamp = tripData["tripDate"] as? Timestamp {
-                        self.tripDate = timestamp.dateValue()
-                        self.checkIfCurrentTrip()
-                    }
-                    // Extract vehicle details
-                    if let vehicleData = tripData["assignedVehicle"] as? [String: Any] {
-                        self.Vehicle = vehicleData["model"] as? String ?? "Unknown Vehicle"
-                        self.Vehiclerc = vehicleData["registrationNumber"] as? String ?? "Unknown Registration"
-                        self.vehicleType = vehicleData["type"] as? String ?? "Unknown Type"
-                        self.VehicleId = vehicleData["id"] as? String ?? "Unknown Type"
-                    } else {
-                        self.Vehicle = "No Vehicle Assigned"
-                        self.Vehiclerc = "No Vehicle Assigned"
-                        self.vehicleType = "No Vehicle Assigned"
-                        self.VehicleId = "No Vehicle Assigned"
-                    }
-                    
-                    // Extract driver details
-                    if let driverData = tripData["assignedDriver"] as? [String: Any] {
-                        self.driverName = driverData["name"] as? String ?? "Unknown Driver"
-                    } else {
-                        self.driverName = "No Driver Assigned"
-                    }
-
-                    // Extract estimated time
-                    if let estimatedTimeValue = tripData["estimatedTime"] as? Double {
-                        self.estimatedTime = "\(Int(estimatedTimeValue)) hours"
-                    } else {
-                        self.estimatedTime = "Unknown"
-                    }
-
-                    // Extract distance
-                    if let distanceValue = tripData["distance"] as? Double {
-                        self.distance = String(format: "%.2f km", distanceValue)
-                    } else {
-                        self.distance = "Unknown"
-                    }
-
-                    // Extract and format trip date
-                    if let tripDateTimestamp = tripData["tripDate"] as? Timestamp {
-                        let date = tripDateTimestamp.dateValue()
-                        let formatter = DateFormatter()
-                        formatter.dateStyle = .medium
-                        formatter.timeStyle = .none
-                        self.tripDateToday = formatter.string(from: date)
-                    } else {
-                        self.tripDateToday = "Unknown"
-                    }
-//                    print("Vehicle: " + VehicleId)
+                    self.tripStatusFromDB = "Completed"
+                    self.isCurrentTrip = false
+                    self.tripID = nil
                 }
             }
     }
-
     
-    private func checkIfCurrentTrip() {
-        guard let tripDate = tripDate else {
-            isCurrentTrip = false
-            return
-        }
-        
-        let calendar = Calendar.current
-        let today = calendar.startOfDay(for: Date())
-        let tripDay = calendar.startOfDay(for: tripDate)
-        
-        isCurrentTrip = calendar.isDate(today, inSameDayAs: tripDay)
-    }
-    
-    private func tripDetailRow(title: String, value: String, color: Color) -> some View {
+    func tripDetailRow(title: String, value: String, color: Color) -> some View {
         HStack(alignment: .center, spacing: 8) {
             Circle()
                 .fill(color)
