@@ -59,10 +59,10 @@ struct MaintenanceProfileView: View {
                     }
                     
                     // Maintenance Statistics
-                    MaintenanceCardView(title: "Work Statistics") {
-                        MaintenanceInfoRow(icon: "checkmark.circle.fill", title: "Completed Services", value: "\(userData["completedServices"] as? Int ?? 24)")
-                        MaintenanceInfoRow(icon: "clock.fill", title: "In Progress", value: "\(userData["inProgressServices"] as? Int ?? 3)")
-                    }
+//                    MaintenanceCardView(title: "Work Statistics") {
+//                        MaintenanceInfoRow(icon: "checkmark.circle.fill", title: "Completed Services", value: "\(userData["completedServices"] as? Int ?? 24)")
+//                        MaintenanceInfoRow(icon: "clock.fill", title: "In Progress", value: "\(userData["inProgressServices"] as? Int ?? 3)")
+//                    }
                     
                     // Logout Button
                     Button(action: {

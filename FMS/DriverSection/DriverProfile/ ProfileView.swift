@@ -13,7 +13,6 @@ struct ProfileView: View {
     @State private var experience = "5 Years"
     @State private var vehicleType = "Heavy Truck"
     @State private var specializedTerrain = "Mountain, Highway"
-   
     
     // Logout related state variables
     @State private var showLogoutAlert = false
@@ -56,25 +55,6 @@ struct ProfileView: View {
                     
                     // License Section
                     CardView(title: "License Information") {
-<<<<<<< HEAD
-                        
-                       
-                        
-                        VStack(alignment: .leading, spacing: 10) {
-                            Text("Driver's License")
-                                .font(.subheadline)
-                                .foregroundColor(.gray)
-                            
-                            ZStack {
-                                Rectangle()
-                                    .fill(Color.gray.opacity(0.2))
-                                    .frame(height: 180)
-                                    .cornerRadius(12)
-                                    .overlay(
-                                        Image("license_image")
-                                            .resizable()
-                                            .scaledToFit()
-=======
                                 VStack(alignment: .leading, spacing: 10) {
                                     Text("Driver's License")
                                         .font(.subheadline)
@@ -83,7 +63,6 @@ struct ProfileView: View {
                                     ZStack {
                                         Rectangle()
                                             .fill(Color.gray.opacity(0.2))
->>>>>>> a5f7252cc83c9e4e6c87d85591dc3842ad7f8e0a
                                             .frame(height: 180)
                                             .cornerRadius(12)
                                         
@@ -183,7 +162,6 @@ struct ProfileView: View {
                     phone = userData["phone"] as? String ?? phone
                     email = userData["email"] as? String ?? email
                     name = userData["name"] as? String ?? name
-//                    licenseImageURL = userData["license"] as? String ?? licenseImageURL
                     experience = userData["experience"] as? String ?? experience
                     vehicleType = userData["vehiclePreference"] as? String ?? vehicleType
                     specializedTerrain = userData["geoPreference"] as? String ?? specializedTerrain

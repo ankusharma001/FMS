@@ -10,7 +10,7 @@ struct MaintenanceHomeView: View {
     @State private var vehicleData: [Vehicle] = []
     @State private var statusFilter: Bool? = nil  // nil = all, true = Active, false = Inactive
     
-    @State private var maintenanceStatusFilter: MaintenanceStatus? = nil  // nil = all, otherwise filter by status
+    @State private var maintenanceStatusFilter: MaintenanceStatus? = .scheduled // nil = all, otherwise filter by status
 
     private var filteredVehicles: [Vehicle] {
         vehicleData.filter { vehicle in
@@ -44,15 +44,15 @@ struct MaintenanceHomeView: View {
         NavigationView {
             VStack(spacing: 0) {
                 
-                Button(action: {
-                    print("Button tapped!\(assignedVehicles)")
-                }) {
-                    Text("Click Me")
-                        .padding()
-                        .background(Color.blue)
-                        .foregroundColor(.white)
-                        .cornerRadius(8)
-                }
+//                Button(action: {
+//                    print("Button tapped!\(assignedVehicles)")
+//                }) {
+//                    Text("Click Me")
+//                        .padding()
+//                        .background(Color.blue)
+//                        .foregroundColor(.white)
+//                        .cornerRadius(8)
+//                }
                 
                 HStack(spacing: 12) {
                     StatisticCardView(
@@ -82,7 +82,7 @@ struct MaintenanceHomeView: View {
                         Button(action: {
                             searchText = ""  // Clear search
                         }) {
-                            Image(systemName: "xmark.circle.fill")
+                            Image(systemName: "")
                                 .foregroundColor(.gray)
                         }
                     }
@@ -98,6 +98,9 @@ struct MaintenanceHomeView: View {
                     }
                     .pickerStyle(SegmentedPickerStyle())
                     .padding(.horizontal)
+                    .onChange(of: maintenanceStatusFilter) { newValue in
+                        fetchUserData()
+                    }
                     
                 }
                 .padding()
@@ -199,6 +202,7 @@ struct MaintenanceTaskRow: View {
     var vehicle: Vehicle
     var assignedVehicles: [String] // ✅ Pass assignedVehicles here
     var action: () -> Void
+  
 
     @State private var isUpdating = false
 
@@ -222,6 +226,7 @@ struct MaintenanceTaskRow: View {
             Button(action: {
                 print("in maintenance personnel: \(String(describing: vehicle.id))")
                 updateAssignedVehiclesStatus()
+                
             }) {
                 if isUpdating {
                     ProgressView()
@@ -241,7 +246,7 @@ struct MaintenanceTaskRow: View {
         .padding()
         .background(RoundedRectangle(cornerRadius: 10).fill(Color.white))
     }
-
+    
     private func updateAssignedVehiclesStatus() {
         let db = Firestore.firestore()
         
@@ -251,9 +256,11 @@ struct MaintenanceTaskRow: View {
             vehicleRef.getDocument { (document, error) in
                 if let document = document, document.exists {
                     let currentStatus = document.data()?["maintenanceStatus"] as? String ?? "scheduled"
+                    let currentNeedMaintenance = document.data()?["needsMaintenance"] as? Bool ?? true  // Read existing value
                     
                     var newStatus: MaintenanceStatus
                     var newVehicleStatus: Bool
+                    var newNeedMaintenance: Bool = currentNeedMaintenance  // Default to existing value
 
                     switch MaintenanceStatus(rawValue: currentStatus) {
                     case .scheduled:
@@ -262,24 +269,73 @@ struct MaintenanceTaskRow: View {
                     case .active:
                         newStatus = .completed
                         newVehicleStatus = true
+                        newNeedMaintenance = false  // ✅ Set to false when completed
                     default:
                         return
                     }
                     
+                    // Firestore Update
                     vehicleRef.updateData([
                         "maintenanceStatus": newStatus.rawValue,
-                        "status": newVehicleStatus
+                        "status": newVehicleStatus,
+                        "needsMaintenance": newNeedMaintenance  // ✅ Ensure backend gets the correct value
                     ]) { error in
                         if let error = error {
                             print("Error updating vehicle \(vehicleID): \(error.localizedDescription)")
                         } else {
-                            print("Vehicle \(vehicleID) updated successfully!")
+                            print("Vehicle \(vehicleID) updated successfully! needMaintenance set to \(newNeedMaintenance)")
                         }
                     }
                 }
             }
         }
     }
+
+
+//    private func updateAssignedVehiclesStatus() {
+//        let db = Firestore.firestore()
+//        
+//        for vehicleID in assignedVehicles {
+//            let vehicleRef = db.collection("vehicles").document(vehicleID)
+//            
+//            vehicleRef.getDocument { (document, error) in
+//                if let document = document, document.exists {
+//                    let currentStatus = document.data()?["maintenanceStatus"] as? String ?? "scheduled"
+//                    
+//                    var newStatus: MaintenanceStatus
+//                    var newVehicleStatus: Bool
+//                    var newNeedMaintenance: Bool
+//
+//                    switch MaintenanceStatus(rawValue: currentStatus) {
+//                    case .scheduled:
+//                        newStatus = .active
+//                        newVehicleStatus = false
+//                        newNeedMaintenance = true
+//                    case .active:
+//                        newStatus = .completed
+//                        newVehicleStatus = true
+//                        newNeedMaintenance = false  // ✅ Set to false when maintenance is completed
+//                    default:
+//                        return
+//                    }
+//                    
+//                    // Update Firestore
+//                    vehicleRef.updateData([
+//                        "maintenanceStatus": newStatus.rawValue,
+//                        "status": newVehicleStatus,
+//                        "needMaintenance": newNeedMaintenance  // ✅ Add this field update
+//                    ]) { error in
+//                        if let error = error {
+//                            print("Error updating vehicle \(vehicleID): \(error.localizedDescription)")
+//                        } else {
+//                            print("Vehicle \(vehicleID) updated successfully! Need Maintenance set to \(newNeedMaintenance)")
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//    }
+
 }
 
 
