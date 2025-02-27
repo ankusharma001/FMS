@@ -1,155 +1,29 @@
-//import SwiftUI
-//import FirebaseFirestore
-//
-//struct FleetProfileView: View {
-//    @State private var userData: [String: Any] = [:]
-//    @State private var userUUID: String? = UserDefaults.standard.string(forKey: "loggedInUserUUID")
-//    @State private var isEditing = false
-//    @State private var animateEditIcon = false
-//    
-//    @State private var showAlert: Bool = false
-//    @State private var showEditView = false
-//    
-//    var body: some View {
-//        NavigationView {
-//            VStack {
-//                VStack {
-//                    Image(systemName: "person.circle.fill")
-//                        .resizable()
-//                        .frame(width: 100, height: 100)
-//                        .foregroundColor(.blue)
-//                        .shadow(radius: 5)
-//                        .padding(.top, 40)
-//                    
-//                    Text(userData["name"] as? String ?? "John Anderson")
-//                        .font(.title2)
-//                        .fontWeight(.bold)
-//                        .padding(.top, 8)
-//                        .padding(.horizontal, 20)
-//                        .multilineTextAlignment(.center)
-//                        .background(isEditing ? Color.white : Color.clear)
-//                        .cornerRadius(8)
-//                        .shadow(radius: isEditing ? 2 : 0)
-//                        .overlay(
-//                            TextField("Enter Name", text: Binding(
-//                                get: { userData["name"] as? String ?? "" },
-//                                set: { userData["name"] = $0 }
-//                            ))
-//                            .textFieldStyle(RoundedBorderTextFieldStyle())
-//                            .frame(width: 300)
-//                            .opacity(isEditing ? 1 : 0)
-//                        )
-//                }
-//                .frame(maxWidth: .infinity)
-//                .padding(.bottom, 20)
-//                
-//                ContactInfoCard(isEditing: $isEditing, userData: $userData)
-//                    .padding()
-//                
-//                Button(action: logoutUser) {
-//                    Text("Log Out")
-//                        .fontWeight(.bold)
-//                        .foregroundColor(.white)
-//                        .frame(maxWidth: .infinity)
-//                        .padding()
-//                        .background(Color.red)
-//                        .cornerRadius(10)
-//                        .padding(.horizontal, 20)
-//                        .shadow(radius: 3)
-//                }
-//                .padding(.top, 20)
-//                
-//                Spacer()
-//            }
-//            .frame(maxWidth: .infinity, maxHeight: .infinity)
-//            .background(Color.gray.opacity(0.2))
-//            .navigationBarTitle("Profile")
-//           
-//            .navigationBarItems(
-//                    trailing: Button("Edit") {
-//                        showEditView.toggle()
-//                    }
-//                )
-//                .sheet(isPresented: $showEditView) {
-//                    editfromfleetmanager(userData: $userData)
-//                }
-//            
-//            .onAppear {
-//                fetchUserProfile()
-//            }
-//        }
-//    }
-//    
-//    func fetchUserProfile() {
-//        guard let userUUID = userUUID else {
-//            print("No user UUID found")
-//            return
-//        }
-//        
-//        let db = Firestore.firestore()
-//        db.collection("users").document(userUUID).getDocument { (document, error) in
-//            if let document = document, document.exists {
-//                DispatchQueue.main.async {
-//                    self.userData = document.data() ?? [:]
-//                }
-//            } else {
-//                print("User not found")
-//            }
-//        }
-//    }
-//    
-//    func logoutUser() {
-//        UserDefaults.standard.removeObject(forKey: "loggedInUserUUID")
-//        print("User logged out")
-//    }
-//}
-//
-//struct ContactInfoCard: View {
-//    @Binding var isEditing: Bool
-//    @Binding var userData: [String: Any]
-//    
-//    var body: some View {
-//        VStack(alignment: .leading, spacing: 8) {
-//            Text("Contact Information")
-//                .font(.headline)
-//                .fontWeight(.bold)
-//            
-//            HStack {
-//                Image(systemName: "phone.fill")
-//                    .foregroundColor(.gray)
-//                TextField("Enter Phone", text: Binding(
-//                    get: { userData["phone"] as? String ?? "8235205048" },
-//                    set: { userData["phone"] = $0 }
-//                ))
-////                .textFieldStyle(RoundedBorderTextFieldStyle())
-//                .background(Color.white)
-//                .cornerRadius(8)
-//                .disabled(!isEditing)
-////                .shadow(radius: 2)
-//            }
-//            .padding(.vertical, 5)
-//            
-//            HStack {
-//                Image(systemName: "envelope.fill")
-//                    .foregroundColor(.gray)
-//                Text(userData["email"] as? String ?? "raj@gmail.com") // Email remains uneditable
-//            }
-//            .padding(.vertical, 5)
-//        }
-//        .padding()
-//        .frame(maxWidth: .infinity, alignment: .leading)
-//        .background(Color.white)
-//        .cornerRadius(12)
-//        .shadow(radius: 2)
-//    }
-//}
-//
-//#Preview {
-//    FleetProfileView()
-//}
-
 import SwiftUI
 import FirebaseFirestore
+import AVFoundation
+
+class SpeechManager: ObservableObject {
+    static let shared = SpeechManager() // Singleton instance
+    
+    private var speechSynthesizer = AVSpeechSynthesizer()
+    
+    @Published var isTextToSpeechEnabled = false
+    
+    private init() {}
+
+    func speak(_ text: String) {
+        guard isTextToSpeechEnabled else { return } // Only speak if enabled
+        
+        let utterance = AVSpeechUtterance(string: text)
+        utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
+        utterance.rate = 0.5
+        
+        speechSynthesizer.speak(utterance)
+    }
+    func stopSpeaking() {
+            speechSynthesizer.stopSpeaking(at: .immediate)
+        }
+}
 
 struct FleetProfileView: View {
     @State private var userData: [String: Any] = [:]
@@ -165,6 +39,9 @@ struct FleetProfileView: View {
     
     // State to trigger redirect to LoginView
     @State private var isLoggedOut = false
+    @AppStorage("ttsEnabled") private var isSpeaking: Bool = false
+    
+    @StateObject private var speechManager = SpeechManager.shared
     
     var body: some View {
         NavigationView {
@@ -201,6 +78,16 @@ struct FleetProfileView: View {
                         FleetInfoRow(icon: "phone.fill", title: "Phone", value: phone)
                     }
                     
+                    Toggle("Enable Text-to-Speech", isOn: $speechManager.isTextToSpeechEnabled)
+                                            .padding()
+                                            .onChange(of: speechManager.isTextToSpeechEnabled) { isEnabled in
+                                                if isEnabled {
+                                                    speakProfileDetails()
+                                                }
+                                                else {
+                                                    SpeechManager.shared.stopSpeaking()
+                                                }
+                                            }
                     // Logout Button
                     Button(action: {
                         print("Logout button tapped")
@@ -220,7 +107,10 @@ struct FleetProfileView: View {
                 .padding()
             }
             .background(Color.gray.opacity(0.05))
-            .onAppear(perform: fetchUserProfile)
+            .onAppear {
+                            fetchUserProfile()
+                        }
+
             .navigationTitle("Profile")
 //            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -251,6 +141,14 @@ struct FleetProfileView: View {
             LoginView()
         })
     }
+    
+    func speakProfileDetails() {
+            let name = userData["name"] as? String ?? "Unknown"
+            let email = userData["email"] as? String ?? "Unknown"
+            let phone = userData["phone"] as? String ?? "Unknown"
+            let textToSpeak = "Fleet profile details. Name: \(name). Email: \(email). Phone: \(phone)"
+            speechManager.speak(textToSpeak)
+        }
     
     func fetchUserProfile() {
         guard let userUUID = userUUID else {

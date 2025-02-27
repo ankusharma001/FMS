@@ -6,6 +6,7 @@
 //
 import SwiftUI
 import FirebaseFirestore
+import AVFoundation
 
 func generateExampleTrips() -> [Trip] {
     let driver1 = Driver(name: "John Doe", email: "john@example.com", phone: "123-456-7890", experience: .moreThanFive, license: "D12345", geoPreference: .plain, vehiclePreference: .truck, status: true)
@@ -57,6 +58,8 @@ struct DashboardView: View {
     var trip = generateExampleTrips()
    
     @State private var trips: [Trip] = []
+    @ObservedObject private var speechManager = SpeechManager.shared
+    @AppStorage("ttsEnabled") private var isSpeaking: Bool = true
     
 
     // Counts fetched from Firestore
@@ -114,16 +117,40 @@ struct DashboardView: View {
             .background(Color(.systemGray6))
             .navigationTitle("Fleet Control")
             .onAppear {
-                UINavigationBar.appearance().backgroundColor = .white
-                UINavigationBar.appearance().isTranslucent = false
-                fetchDriversCount()
-                fetchVehicleCount()
-                fetchMaintenanceCount()
-                fetchActiveTripsCount()
-                fetchTrips() 
-            }
+                            UINavigationBar.appearance().backgroundColor = .white
+                            UINavigationBar.appearance().isTranslucent = false
+                            fetchDriversCount()
+                            fetchVehicleCount()
+                            fetchMaintenanceCount()
+                            fetchActiveTripsCount()
+                            fetchTrips()
+                            
+                            if isSpeaking { // Check if TTS is enabled globally
+                                speakDashboardDetails()
+                            } else {
+                                speechManager.stopSpeaking()
+                            }
+                        }
+                        .onChange(of: isSpeaking) { newValue in
+                            if newValue {
+                                speakDashboardDetails()
+                            } else {
+                                speechManager.stopSpeaking()
+                            }
+                        }
         }
     }
+    
+    func speakDashboardDetails() {
+            let textToSpeak = """
+            Fleet Control Dashboard.
+            Total Vehicles: \(vehicleCount).
+            Active Trips: \(activeTripsCount).
+            Maintenance Personnel: \(maintenanceCount).
+            Total Drivers: \(driverCount).
+            """
+            speechManager.speak(textToSpeak)
+        }
     
     // MARK: - Firestore Fetch Functions
     
