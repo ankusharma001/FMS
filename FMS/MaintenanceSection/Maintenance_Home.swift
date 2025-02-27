@@ -8,74 +8,100 @@ struct MaintenanceHomeView: View {
     @State private var searchText = ""
     @State private var assignedVehicles: [String] = []
     @State private var vehicleData: [Vehicle] = []
+    @State private var statusFilter: Bool? = nil  // nil = all, true = Active, false = Inactive
+    
+    @State private var maintenanceStatusFilter: MaintenanceStatus? = nil  // nil = all, otherwise filter by status
+
+    private var filteredVehicles: [Vehicle] {
+        vehicleData.filter { vehicle in
+            let matchesSearch = searchText.isEmpty ||
+                vehicle.registrationNumber.localizedCaseInsensitiveContains(searchText) ||
+                vehicle.model.localizedCaseInsensitiveContains(searchText)
+            
+            let matchesStatus = maintenanceStatusFilter == nil || vehicle.maintenanceStatus == maintenanceStatusFilter
+            
+            return matchesSearch && matchesStatus
+        }
+    }
     
     private let db = Firestore.firestore()
     private let userUUID = UserDefaults.standard.string(forKey: "loggedInUserUUID")
     
+    // Computed property to filter vehicle data
+//    private var filteredVehicles: [Vehicle] {
+//        vehicleData.filter { vehicle in
+//            let matchesSearch = searchText.isEmpty ||
+//                vehicle.registrationNumber.localizedCaseInsensitiveContains(searchText) ||
+//                vehicle.model.localizedCaseInsensitiveContains(searchText)
+//            
+//            let matchesStatus = statusFilter == nil || vehicle.status == statusFilter
+//            
+//            return matchesSearch && matchesStatus
+//        }
+//    }
+    
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
-                //                VStack(alignment: .leading, spacing: 16) {
-                //                    HStack {
-                //                        Text("Home")
-                //                            .font(.largeTitle)
-                //                            .fontWeight(.bold)
-                //                        Spacer()
-                //                        Button(action: { }) {
-                //                            ZStack {
-                //                                Circle()
-                //                                    .fill(Color.red.opacity(0.2))
-                //                                    .frame(width: 44, height: 44)
-                //                                Image(systemName: "bell.fill")
-                //                                    .foregroundColor(.red)
-                //                                    .font(.system(size: 20))
-                //                            }
-                //                        }
-                //                    }
-                //                }
-                //                .padding()
-                //                .background(Color.white)
+                
+                Button(action: {
+                    print("Button tapped!\(assignedVehicles)")
+                }) {
+                    Text("Click Me")
+                        .padding()
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(8)
+                }
+                
                 HStack(spacing: 12) {
-                    // Under Maintenance card
                     StatisticCardView(
                         iconName: "square.grid.2x2.fill",
                         iconColor: .blue,
                         title: "Under Maintenance",
-                        value: "0"
+                        value: "\(vehicleData.filter { !$0.status }.count)"
                     )
                     
-                    // Completed Tasks card
                     StatisticCardView(
                         iconName: "checkmark.circle.fill",
                         iconColor: .green,
                         title: "Completed Tasks",
-                        value: "0"
+                        value: "\(vehicleData.filter { $0.status }.count)"
                     )
-                }.padding()
+                }
+                .padding()
+                
                 VStack(spacing: 15) {
-                HStack {
-                    Image(systemName: "magnifyingglass")
-                        .foregroundColor(.gray)
-                    
-                    TextField("Search vehicles...", text: $searchText)
-                        .foregroundColor(.primary)
-                    
-                    Button(action: {
-                        // Additional filter options
-                    }) {
-                        Image(systemName: "line.3.horizontal.decrease")
+                    HStack {
+                        Image(systemName: "magnifyingglass")
                             .foregroundColor(.gray)
+                        
+                        TextField("Search vehicles...", text: $searchText)
+                            .foregroundColor(.primary)
+                        
+                        Button(action: {
+                            searchText = ""  // Clear search
+                        }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.gray)
+                        }
                     }
+                    .padding()
+                    .background(Color(.white))
+                    .cornerRadius(10)
+                    
+                   
+                    Picker("Maintenance Status", selection: $maintenanceStatusFilter) {
+                        ForEach(MaintenanceStatus.allCases, id: \.self) { status in
+                            Text(status.rawValue).tag(status as MaintenanceStatus?)
+                        }
+                    }
+                    .pickerStyle(SegmentedPickerStyle())
+                    .padding(.horizontal)
+                    
                 }
                 .padding()
                 .background(Color(.systemGray6))
-                .cornerRadius(10)
-            }
-            .padding()
-            .background(Color.white)
-        
-            
-              
                 
                 if isLoading {
                     Spacer()
@@ -93,8 +119,8 @@ struct MaintenanceHomeView: View {
                 } else {
                     ScrollView {
                         LazyVStack(spacing: 16) {
-                            ForEach(vehicleData, id: \.id) { vehicle in
-                                MaintenanceTaskRow(vehicle: vehicle) {
+                            ForEach(filteredVehicles, id: \.id) { vehicle in
+                                MaintenanceTaskRow(vehicle: vehicle, assignedVehicles: assignedVehicles) {
                                     print("Perform action on \(vehicle.registrationNumber)")
                                 }
                             }
@@ -103,16 +129,15 @@ struct MaintenanceHomeView: View {
                     }
                     .background(Color(.systemGray6))
                 }
-            }.background(Color(.systemGray6))
-                
-            
-                .navigationTitle("Home")
-            
-            .onAppear { fetchUserData() }
+            }
+            .background(Color(.systemGray6))
+            .navigationTitle("Home")
+            .onAppear {
+                fetchUserData()
+            }
         }
     }
     
-    /// Fetch user data and assigned vehicles
     private func fetchUserData() {
         guard let userUUID = userUUID else {
             errorMessage = "User not logged in."
@@ -126,7 +151,7 @@ struct MaintenanceHomeView: View {
                     let userData = document.data() ?? [:]
                     if let assignedVehicleIDs = userData["assignedVehicles"] as? [String] {
                         self.assignedVehicles = assignedVehicleIDs
-                        fetchVehicleData(vehicleIDs: assignedVehicleIDs) // Fetch vehicle details
+                        fetchVehicleData(vehicleIDs: assignedVehicleIDs)
                     } else {
                         self.isLoading = false
                         self.errorMessage = "No assigned vehicles."
@@ -139,11 +164,10 @@ struct MaintenanceHomeView: View {
         }
     }
     
-    /// Fetch vehicle details based on assigned vehicle IDs
     private func fetchVehicleData(vehicleIDs: [String]) {
         var fetchedVehicles: [Vehicle] = []
         let group = DispatchGroup()
-
+        
         for vehicleID in vehicleIDs {
             group.enter()
             db.collection("vehicles").document(vehicleID).getDocument { (document, error) in
@@ -162,49 +186,104 @@ struct MaintenanceHomeView: View {
                 }
             }
         }
-
+        
         group.notify(queue: .main) {
             self.vehicleData = fetchedVehicles
         }
     }
 }
 
-/// A row displaying a vehicle's maintenance details
+
+
 struct MaintenanceTaskRow: View {
     var vehicle: Vehicle
+    var assignedVehicles: [String] // ✅ Pass assignedVehicles here
     var action: () -> Void
+
+    @State private var isUpdating = false
 
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 8) {
-                Text(vehicle.registrationNumber)
-                    .font(.headline)
-
                 Text(vehicle.model)
+                    .font(.headline)
+                
+                Text(vehicle.registrationNumber)
                     .font(.subheadline)
                     .foregroundColor(.gray)
-
-                Text(vehicle.status ? "Active" : "Inactive")
+                
+                Text(vehicle.maintenanceStatus.rawValue)
                     .font(.caption)
-                    .foregroundColor(vehicle.status ? .orange : .gray)
+                    .foregroundColor(vehicle.maintenanceStatus == .active ? .orange : (vehicle.maintenanceStatus == .completed ? .green : .gray))
             }
 
             Spacer()
 
-            Button(action: action) {
-                Text("Start/Complete") // Adjust dynamically if needed
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(vehicle.status ? Color.blue : Color.gray)
-                    .foregroundColor(.white)
-                    .cornerRadius(8)
+            Button(action: {
+                print("in maintenance personnel: \(String(describing: vehicle.id))")
+                updateAssignedVehiclesStatus()
+            }) {
+                if isUpdating {
+                    ProgressView()
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                } else {
+                    Text(vehicle.maintenanceStatus == .scheduled ? "Start" : (vehicle.maintenanceStatus == .active ? "Complete" : "Completed"))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(vehicle.maintenanceStatus == .scheduled ? Color.blue : (vehicle.maintenanceStatus == .active ? Color.orange : Color.green))
+                        .foregroundColor(.white)
+                        .cornerRadius(8)
+                }
             }
+            .disabled(vehicle.maintenanceStatus == .completed || isUpdating)
         }
         .padding()
         .background(RoundedRectangle(cornerRadius: 10).fill(Color.white))
-        .shadow(radius: 2)
+    }
+
+    private func updateAssignedVehiclesStatus() {
+        let db = Firestore.firestore()
+        
+        for vehicleID in assignedVehicles {
+            let vehicleRef = db.collection("vehicles").document(vehicleID)
+            
+            vehicleRef.getDocument { (document, error) in
+                if let document = document, document.exists {
+                    let currentStatus = document.data()?["maintenanceStatus"] as? String ?? "scheduled"
+                    
+                    var newStatus: MaintenanceStatus
+                    var newVehicleStatus: Bool
+
+                    switch MaintenanceStatus(rawValue: currentStatus) {
+                    case .scheduled:
+                        newStatus = .active
+                        newVehicleStatus = false
+                    case .active:
+                        newStatus = .completed
+                        newVehicleStatus = true
+                    default:
+                        return
+                    }
+                    
+                    vehicleRef.updateData([
+                        "maintenanceStatus": newStatus.rawValue,
+                        "status": newVehicleStatus
+                    ]) { error in
+                        if let error = error {
+                            print("Error updating vehicle \(vehicleID): \(error.localizedDescription)")
+                        } else {
+                            print("Vehicle \(vehicleID) updated successfully!")
+                        }
+                    }
+                }
+            }
+        }
     }
 }
+
+
+
 
 struct StatisticCardView: View {
     var iconName: String

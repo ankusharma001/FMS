@@ -6,7 +6,7 @@ struct DriverImageLoader: View {
     let imageUrl: String?
     
     var body: some View {
-        if let imageUrl = imageUrl, let url = URL(string: imageUrl), !imageUrl.isEmpty {
+        if let imageUrl = imageUrl, !imageUrl.isEmpty, let url = URL(string: imageUrl) {
             AsyncImage(url: url) { phase in
                 switch phase {
                 case .empty:
@@ -42,6 +42,23 @@ struct DriverImageLoader: View {
                 }
         }
     }
+    
+    private func formatImageUrl(_ rawUrl: String) -> String? {
+            if rawUrl.isEmpty {
+                print("⚠️ Empty image URL")
+                return nil
+            }
+            
+            // If the URL doesn't start with http or https, it might be a Firebase Storage reference
+            if !rawUrl.hasPrefix("http") {
+                // Replace YOUR-FIREBASE-PROJECT with your actual Firebase project ID
+                let storageUrl = "https://firebasestorage.googleapis.com/v0/b/YOUR-FIREBASE-PROJECT.appspot.com/o/"
+                let encodedPath = rawUrl.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? rawUrl
+                return "\(storageUrl)\(encodedPath)?alt=media"
+            }
+            
+            return rawUrl
+        }
     
     private var placeholderImage: some View {
         Image(systemName: "photo.fill")
@@ -111,7 +128,7 @@ struct AddDriverView: View {
             _name = State(initialValue: user.name)
             _email = State(initialValue: user.email)
             _contactNumber = State(initialValue: user.phone)
-            _licenseImageURL = State(initialValue: user.license) 
+            _licenseImageURL = State(initialValue: user.license)
         _selectedVehicle = State(initialValue: user.vehiclePreference.rawValue)
         _selectedTerrain = State(initialValue: user.geoPreference.rawValue)
         }
@@ -140,25 +157,6 @@ struct AddDriverView: View {
            let predicate = NSPredicate(format: "SELF MATCHES %@", emailRegex)
            isInvalidEmail = !predicate.evaluate(with: input)
        }
-    func DrivergetFormattedImageUrl(_ rawUrl: String?) -> String? {
-        guard let rawUrl = rawUrl, !rawUrl.isEmpty else {
-            print("⚠️ Empty or nil image URL")
-            return nil
-        }
-        
-        // If the URL doesn't start with http or https, it might be a Firebase Storage reference
-        if !rawUrl.hasPrefix("http") {
-            // Assuming you're using Firebase Storage, construct the proper URL
-            // Adjust the bucket URL according to your Firebase project
-            let storageUrl = "https://firebasestorage.googleapis.com/v0/b/YOUR-FIREBASE-PROJECT.appspot.com/o/"
-            let encodedPath = rawUrl.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? rawUrl
-            return "\(storageUrl)\(encodedPath)?alt=media"
-        }
-        
-        return rawUrl
-    }
-    
-
     var body: some View {
         Form {
             Section(header: Text("Name")) {
