@@ -31,7 +31,7 @@ struct CurrentTripView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
                             Image(systemName: "truck.box.fill")
-                                .foregroundColor(.blue)
+                                .foregroundColor(.gray)
                                 .font(.system(size: 24))
                             
                             VStack(alignment: .leading, spacing: 2) {
