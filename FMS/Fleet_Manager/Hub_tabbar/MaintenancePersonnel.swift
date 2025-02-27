@@ -72,30 +72,46 @@ struct MaintenancePersonnelListview: View {
             } else {
                 List {
                     ForEach(filteredList) { person in
-                        HStack {
-                            Image(systemName: "person.crop.circle")
-                                .foregroundColor(.gray)
-                                .font(.title2)
-                            
-                            VStack(alignment: .leading) {
-                                Text(person.name)
-                                    .font(.headline)
-                                Text(person.email)
-                                    .font(.subheadline)
+                        HStack(spacing: 16) {
+                            ZStack {
+                                Circle()
+                                    .fill(Color(.systemGray5))
+                                    .frame(width: 45, height: 45)
+                                
+                                Image(systemName: "person.circle.fill")
+                                    .resizable()
+                                    .frame(width: 50, height: 50)
                                     .foregroundColor(.gray)
                             }
                             
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(person.name)
+                                    .font(.system(size: 17, weight: .semibold))
+                                    .foregroundColor(.primary)
+                                
+                                Text(person.email)
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.secondary)
+                                    .lineLimit(1)
+                            }
+                            
                             Spacer()
+                            
+//                                Image(systemName: "ellipsis")
+//                                    .foregroundColor(.gray)
+//                                    .padding(.trailing, 8)
                         }
-                        .padding(.vertical, 5)
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
+                        .padding(.vertical, 12)
                         .padding(.horizontal, 16)
-                        .frame(maxWidth: 350)
-                        .background(Color.white)
-                        .cornerRadius(10)
+                        .background(Color(.systemBackground))
+                        .cornerRadius(12)
+                        .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
                     }
                     .onDelete(perform: deletePerson)
                 }
-                .listStyle(PlainListStyle())
+                .listStyle(.plain)
             }
         }
         .padding(.top, 20)
