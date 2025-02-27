@@ -100,7 +100,7 @@ struct DashboardView: View {
                     }
                     .padding(.horizontal)
                     
-                    Text("Recent Activities")
+                    Text("Scheduled Trips")
                         .font(.headline)
                         .padding(.horizontal)
                     
