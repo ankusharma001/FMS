@@ -1,31 +1,345 @@
-//
-//  Maintenance_Home.swift
-//  FMS
-//
-//  Created by Vansh Sharma on 19/02/25.
-//
-
 import SwiftUI
 import FirebaseFirestore
+import FirebaseAuth
 
-struct MaintenanceTask: Identifiable, Codable {
-    @DocumentID var id: String?
-    var vehicleId: String
-    var taskDescription: String
-    var status: MaintenanceStatus
-    var createdAt: Date?
-    var vehicle: Vehicle?
+struct MaintenanceHomeView: View {
+    @State private var isLoading = true
+    @State private var errorMessage: String?
+    @State private var searchText = ""
+    @State private var assignedVehicles: [String] = []
+    @State private var vehicleData: [Vehicle] = []
+    @State private var statusFilter: Bool? = nil  // nil = all, true = Active, false = Inactive
     
-    enum MaintenanceStatus: String, Codable {
-        case active = "Active"
-        case scheduled = "Scheduled"
-        case completed = "Completed"
+    @State private var maintenanceStatusFilter: MaintenanceStatus? = .scheduled // nil = all, otherwise filter by status
+
+    private var filteredVehicles: [Vehicle] {
+        vehicleData.filter { vehicle in
+            let matchesSearch = searchText.isEmpty ||
+                vehicle.registrationNumber.localizedCaseInsensitiveContains(searchText) ||
+                vehicle.model.localizedCaseInsensitiveContains(searchText)
+            
+            let matchesStatus = maintenanceStatusFilter == nil || vehicle.maintenanceStatus == maintenanceStatusFilter
+            
+            return matchesSearch && matchesStatus
+        }
     }
     
-    enum CodingKeys: String, CodingKey {
-        case id, vehicleId, taskDescription, status, createdAt
+    private let db = Firestore.firestore()
+    private let userUUID = UserDefaults.standard.string(forKey: "loggedInUserUUID")
+    
+    // Computed property to filter vehicle data
+//    private var filteredVehicles: [Vehicle] {
+//        vehicleData.filter { vehicle in
+//            let matchesSearch = searchText.isEmpty ||
+//                vehicle.registrationNumber.localizedCaseInsensitiveContains(searchText) ||
+//                vehicle.model.localizedCaseInsensitiveContains(searchText)
+//            
+//            let matchesStatus = statusFilter == nil || vehicle.status == statusFilter
+//            
+//            return matchesSearch && matchesStatus
+//        }
+//    }
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 0) {
+                
+//                Button(action: {
+//                    print("Button tapped!\(assignedVehicles)")
+//                }) {
+//                    Text("Click Me")
+//                        .padding()
+//                        .background(Color.blue)
+//                        .foregroundColor(.white)
+//                        .cornerRadius(8)
+//                }
+                
+                HStack(spacing: 12) {
+                    StatisticCardView(
+                        iconName: "square.grid.2x2.fill",
+                        iconColor: .blue,
+                        title: "Under Maintenance",
+                        value: "\(vehicleData.filter { !$0.status }.count)"
+                    )
+                    
+                    StatisticCardView(
+                        iconName: "checkmark.circle.fill",
+                        iconColor: .green,
+                        title: "Completed Tasks",
+                        value: "\(vehicleData.filter { $0.status }.count)"
+                    )
+                }
+                .padding()
+                
+                VStack(spacing: 15) {
+                    HStack {
+                        Image(systemName: "magnifyingglass")
+                            .foregroundColor(.gray)
+                        
+                        TextField("Search vehicles...", text: $searchText)
+                            .foregroundColor(.primary)
+                        
+                        Button(action: {
+                            searchText = ""  // Clear search
+                        }) {
+                            Image(systemName: "")
+                                .foregroundColor(.gray)
+                        }
+                    }
+                    .padding()
+                    .background(Color(.white))
+                    .cornerRadius(10)
+                    
+                   
+                    Picker("Maintenance Status", selection: $maintenanceStatusFilter) {
+                        ForEach(MaintenanceStatus.allCases, id: \.self) { status in
+                            Text(status.rawValue).tag(status as MaintenanceStatus?)
+                        }
+                    }
+                    .pickerStyle(SegmentedPickerStyle())
+                    .padding(.horizontal)
+                    .onChange(of: maintenanceStatusFilter) { newValue in
+                        fetchUserData()
+                    }
+                    
+                }
+                .padding()
+                .background(Color(.systemGray6))
+                
+                if isLoading {
+                    Spacer()
+                    ProgressView("Loading data...")
+                    Spacer()
+                } else if let errorMessage = errorMessage {
+                    Spacer()
+                    Text(errorMessage).padding()
+                    Button("Retry") { fetchUserData() }
+                        .padding()
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(8)
+                    Spacer()
+                } else {
+                    ScrollView {
+                        LazyVStack(spacing: 16) {
+                            ForEach(filteredVehicles, id: \.id) { vehicle in
+                                MaintenanceTaskRow(vehicle: vehicle, assignedVehicles: assignedVehicles) {
+                                    print("Perform action on \(vehicle.registrationNumber)")
+                                }
+                            }
+                        }
+                        .padding()
+                    }
+                    .background(Color(.systemGray6))
+                }
+            }
+            .background(Color(.systemGray6))
+            .navigationTitle("Home")
+            .onAppear {
+                fetchUserData()
+            }
+        }
+    }
+    
+    private func fetchUserData() {
+        guard let userUUID = userUUID else {
+            errorMessage = "User not logged in."
+            isLoading = false
+            return
+        }
+        
+        db.collection("users").document(userUUID).getDocument { (document, error) in
+            DispatchQueue.main.async {
+                if let document = document, document.exists {
+                    let userData = document.data() ?? [:]
+                    if let assignedVehicleIDs = userData["assignedVehicles"] as? [String] {
+                        self.assignedVehicles = assignedVehicleIDs
+                        fetchVehicleData(vehicleIDs: assignedVehicleIDs)
+                    } else {
+                        self.isLoading = false
+                        self.errorMessage = "No assigned vehicles."
+                    }
+                } else {
+                    self.errorMessage = "User data not found."
+                }
+                self.isLoading = false
+            }
+        }
+    }
+    
+    private func fetchVehicleData(vehicleIDs: [String]) {
+        var fetchedVehicles: [Vehicle] = []
+        let group = DispatchGroup()
+        
+        for vehicleID in vehicleIDs {
+            group.enter()
+            db.collection("vehicles").document(vehicleID).getDocument { (document, error) in
+                defer { group.leave() }
+                if let document = document, document.exists {
+                    do {
+                        let vehicle = try document.data(as: Vehicle.self)
+                        DispatchQueue.main.async {
+                            fetchedVehicles.append(vehicle)
+                        }
+                    } catch {
+                        print("Error decoding vehicle \(vehicleID): \(error.localizedDescription)")
+                    }
+                } else {
+                    print("Vehicle not found for ID \(vehicleID) or error: \(error?.localizedDescription ?? "Unknown error")")
+                }
+            }
+        }
+        
+        group.notify(queue: .main) {
+            self.vehicleData = fetchedVehicles
+        }
     }
 }
+
+
+
+struct MaintenanceTaskRow: View {
+    var vehicle: Vehicle
+    var assignedVehicles: [String] // ✅ Pass assignedVehicles here
+    var action: () -> Void
+  
+
+    @State private var isUpdating = false
+
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(vehicle.model)
+                    .font(.headline)
+                
+                Text(vehicle.registrationNumber)
+                    .font(.subheadline)
+                    .foregroundColor(.gray)
+                
+                Text(vehicle.maintenanceStatus.rawValue)
+                    .font(.caption)
+                    .foregroundColor(vehicle.maintenanceStatus == .active ? .orange : (vehicle.maintenanceStatus == .completed ? .green : .gray))
+            }
+
+            Spacer()
+
+            Button(action: {
+                print("in maintenance personnel: \(String(describing: vehicle.id))")
+                updateAssignedVehiclesStatus()
+                
+            }) {
+                if isUpdating {
+                    ProgressView()
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                } else {
+                    Text(vehicle.maintenanceStatus == .scheduled ? "Start" : (vehicle.maintenanceStatus == .active ? "Complete" : "Completed"))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(vehicle.maintenanceStatus == .scheduled ? Color.blue : (vehicle.maintenanceStatus == .active ? Color.orange : Color.green))
+                        .foregroundColor(.white)
+                        .cornerRadius(8)
+                }
+            }
+            .disabled(vehicle.maintenanceStatus == .completed || isUpdating)
+        }
+        .padding()
+        .background(RoundedRectangle(cornerRadius: 10).fill(Color.white))
+    }
+    
+    private func updateAssignedVehiclesStatus() {
+        let db = Firestore.firestore()
+        
+        for vehicleID in assignedVehicles {
+            let vehicleRef = db.collection("vehicles").document(vehicleID)
+            
+            vehicleRef.getDocument { (document, error) in
+                if let document = document, document.exists {
+                    let currentStatus = document.data()?["maintenanceStatus"] as? String ?? "scheduled"
+                    let currentNeedMaintenance = document.data()?["needsMaintenance"] as? Bool ?? true  // Read existing value
+                    
+                    var newStatus: MaintenanceStatus
+                    var newVehicleStatus: Bool
+                    var newNeedMaintenance: Bool = currentNeedMaintenance  // Default to existing value
+
+                    switch MaintenanceStatus(rawValue: currentStatus) {
+                    case .scheduled:
+                        newStatus = .active
+                        newVehicleStatus = false
+                    case .active:
+                        newStatus = .completed
+                        newVehicleStatus = true
+                        newNeedMaintenance = false  // ✅ Set to false when completed
+                    default:
+                        return
+                    }
+                    
+                    // Firestore Update
+                    vehicleRef.updateData([
+                        "maintenanceStatus": newStatus.rawValue,
+                        "status": newVehicleStatus,
+                        "needsMaintenance": newNeedMaintenance  // ✅ Ensure backend gets the correct value
+                    ]) { error in
+                        if let error = error {
+                            print("Error updating vehicle \(vehicleID): \(error.localizedDescription)")
+                        } else {
+                            print("Vehicle \(vehicleID) updated successfully! needMaintenance set to \(newNeedMaintenance)")
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+//    private func updateAssignedVehiclesStatus() {
+//        let db = Firestore.firestore()
+//        
+//        for vehicleID in assignedVehicles {
+//            let vehicleRef = db.collection("vehicles").document(vehicleID)
+//            
+//            vehicleRef.getDocument { (document, error) in
+//                if let document = document, document.exists {
+//                    let currentStatus = document.data()?["maintenanceStatus"] as? String ?? "scheduled"
+//                    
+//                    var newStatus: MaintenanceStatus
+//                    var newVehicleStatus: Bool
+//                    var newNeedMaintenance: Bool
+//
+//                    switch MaintenanceStatus(rawValue: currentStatus) {
+//                    case .scheduled:
+//                        newStatus = .active
+//                        newVehicleStatus = false
+//                        newNeedMaintenance = true
+//                    case .active:
+//                        newStatus = .completed
+//                        newVehicleStatus = true
+//                        newNeedMaintenance = false  // ✅ Set to false when maintenance is completed
+//                    default:
+//                        return
+//                    }
+//                    
+//                    // Update Firestore
+//                    vehicleRef.updateData([
+//                        "maintenanceStatus": newStatus.rawValue,
+//                        "status": newVehicleStatus,
+//                        "needMaintenance": newNeedMaintenance  // ✅ Add this field update
+//                    ]) { error in
+//                        if let error = error {
+//                            print("Error updating vehicle \(vehicleID): \(error.localizedDescription)")
+//                        } else {
+//                            print("Vehicle \(vehicleID) updated successfully! Need Maintenance set to \(newNeedMaintenance)")
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//    }
+
+}
+
+
+
 
 struct StatisticCardView: View {
     var iconName: String
@@ -60,404 +374,15 @@ struct StatisticCardView: View {
     }
 }
 
-struct MaintenanceHomeView: View {
-    @State private var tasks: [MaintenanceTask] = []
-    @State private var isLoading = true
-    @State private var errorMessage: String?
-    @State private var selectedFilter: MaintenanceTask.MaintenanceStatus = .active
-    @State private var searchText = ""
-    @State private var showStartConfirmation = false
-    @State private var showCompleteConfirmation = false
-    @State private var selectedTask: MaintenanceTask?
-    
-    private let db = Firestore.firestore()
-    
-    var filteredTasks: [MaintenanceTask] {
-        let filtered = tasks.filter { task in
-            task.status == selectedFilter
-        }
-        
-        if searchText.isEmpty {
-            return filtered
-        } else {
-            return filtered.filter { task in
-                task.vehicle?.registrationNumber.lowercased().contains(searchText.lowercased()) ?? false ||
-                task.taskDescription.lowercased().contains(searchText.lowercased())
-            }
-        }
-    }
-    
-    var underMaintenanceCount: Int {
-        tasks.filter { $0.status == .active }.count
-    }
-    
-    var completedTasksCount: Int {
-        tasks.filter { $0.status == .completed }.count
-    }
-    
-    var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
-                // Header
-                VStack(alignment: .leading, spacing: 16) {
-                    // Title and SOS button
-                    HStack {
-                        Text("Home")
-                            .font(.largeTitle)
-                            .fontWeight(.bold)
-                        
-                        Spacer()
-                        
-                        Button(action: {
-                            // SOS Button action placeholder
-                        }) {
-                            ZStack {
-                                Circle()
-                                    .fill(Color.red.opacity(0.2))
-                                    .frame(width: 44, height: 44)
-                                
-                                Image(systemName: "bell.fill")
-                                    .foregroundColor(.red)
-                                    .font(.system(size: 20))
-                            }
-                        }
-                    }
-                    
-                    // Statistics cards
-                    HStack(spacing: 12) {
-                        // Under Maintenance card
-                        StatisticCardView(
-                            iconName: "square.grid.2x2.fill",
-                            iconColor: .blue,
-                            title: "Under Maintenance",
-                            value: "\(underMaintenanceCount)"
-                        )
-                        
-                        // Completed Tasks card
-                        StatisticCardView(
-                            iconName: "checkmark.circle.fill",
-                            iconColor: .green,
-                            title: "Completed Tasks",
-                            value: "\(completedTasksCount)"
-                        )
-                    }
-                    
-                    // Enlarged segmented filter buttons
-                    VStack(spacing: 15) {
-                        Picker("Filter", selection: $selectedFilter) {
-                            Text("Active").tag(MaintenanceTask.MaintenanceStatus.active)
-                            Text("Scheduled").tag(MaintenanceTask.MaintenanceStatus.scheduled)
-                            Text("Completed").tag(MaintenanceTask.MaintenanceStatus.completed)
-                        }
-                        .pickerStyle(SegmentedPickerStyle())
-                        .padding(.horizontal)
-                        .scaleEffect(1.05)
-                        .frame(height: 44)
-                    }
-                    .padding(.vertical, 5)
-                    
-                    // Search bar
-                    HStack {
-                        Image(systemName: "magnifyingglass")
-                            .foregroundColor(.gray)
-                        
-                        TextField("Search vehicles...", text: $searchText)
-                            .foregroundColor(.primary)
-                        
-                        Button(action: {
-                            // Additional filter options
-                        }) {
-                            Image(systemName: "line.3.horizontal.decrease")
-                                .foregroundColor(.gray)
-                        }
-                    }
-                    .padding()
-                    .background(Color(.systemGray6))
-                    .cornerRadius(10)
-                }
-                .padding()
-                .background(Color.white)
-                
-                // Task list or loading/error state
-                if isLoading {
-                    Spacer()
-                    ProgressView("Loading maintenance tasks...")
-                    Spacer()
-                } else if let errorMessage = errorMessage {
-                    Spacer()
-                    VStack {
-                        Image(systemName: "exclamationmark.triangle")
-                            .font(.system(size: 50))
-                            .foregroundColor(.orange)
-                            .padding()
-                        
-                        Text(errorMessage)
-                            .multilineTextAlignment(.center)
-                            .padding()
-                        
-                        Button("Retry") {
-                            fetchMaintenanceTasks()
-                        }
-                        .padding()
-                        .background(Color.blue)
-                        .foregroundColor(.white)
-                        .cornerRadius(8)
-                    }
-                    Spacer()
-                } else if filteredTasks.isEmpty {
-                    Spacer()
-                    VStack(spacing: 10) {
-                        Image(systemName: "wrench.and.screwdriver")
-                            .font(.system(size: 50))
-                            .foregroundColor(.gray)
-                        
-                        Text("No \(selectedFilter.rawValue.lowercased()) maintenance tasks found")
-                            .font(.headline)
-                        
-                        if !searchText.isEmpty {
-                            Text("Try adjusting your search criteria")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                    .padding()
-                    Spacer()
-                } else {
-                    ScrollView {
-                        LazyVStack(spacing: 16) {
-                            ForEach(filteredTasks) { task in
-                                MaintenanceTaskRow(task: task, selectedFilter: selectedFilter) {
-                                    if selectedFilter == .scheduled {
-                                        selectedTask = task
-                                        showStartConfirmation = true
-                                    } else if selectedFilter == .active {
-                                        selectedTask = task
-                                        showCompleteConfirmation = true
-                                    }
-                                }
-                            }
-                        }
-                        .padding()
-                    }
-                    .background(Color(.systemGray6))
-                }
-            }
-            .onAppear {
-                fetchMaintenanceTasks()
-            }
-            .alert(isPresented: $showStartConfirmation) {
-                Alert(
-                    title: Text("Start Maintenance"),
-                    message: Text("Are you sure you want to start maintenance for \(selectedTask?.vehicle?.registrationNumber ?? "this vehicle")?"),
-                    primaryButton: .default(Text("Start")) {
-                        if let selectedTask = selectedTask, let taskId = selectedTask.id {
-                            updateTaskStatus(taskId: taskId, newStatus: .active)
-                        }
-                    },
-                    secondaryButton: .cancel()
-                )
-            }
-            .alert("Complete Maintenance", isPresented: $showCompleteConfirmation) {
-                Button("Complete", role: .none) {
-                    if let selectedTask = selectedTask, let taskId = selectedTask.id {
-                        updateTaskStatus(taskId: taskId, newStatus: .completed)
-                    }
-                }
-                Button("Cancel", role: .cancel) { }
-            } message: {
-                Text("Are you sure you want to mark maintenance for \(selectedTask?.vehicle?.registrationNumber ?? "this vehicle") as completed?")
-            }
-        }
-    }
-    
-    private func fetchMaintenanceTasks() {
-        isLoading = true
-        errorMessage = nil
-        
-        // First, fetch maintenance tasks
-        db.collection("maintenanceTasks")
-            .getDocuments { (snapshot, error) in
-                if let error = error {
-                    DispatchQueue.main.async {
-                        self.isLoading = false
-                        self.errorMessage = "Error loading maintenance tasks: \(error.localizedDescription)"
-                    }
-                    return
-                }
-                
-                guard let documents = snapshot?.documents else {
-                    DispatchQueue.main.async {
-                        self.isLoading = false
-                        self.tasks = []
-                    }
-                    return
-                }
-                
-                // Parse maintenance tasks
-                var maintenanceTasks: [MaintenanceTask] = []
-                for document in documents {
-                    do {
-                        var task = try document.data(as: MaintenanceTask.self)
-                        task.id = document.documentID
-                        maintenanceTasks.append(task)
-                    } catch {
-                        print("Error decoding task: \(error)")
-                    }
-                }
-                
-                // Now fetch all vehicles to populate the task.vehicle property
-                self.db.collection("vehicles").getDocuments { (vehicleSnapshot, vehicleError) in
-                    DispatchQueue.main.async {
-                        if let vehicleError = vehicleError {
-                            self.isLoading = false
-                            self.errorMessage = "Error loading vehicles: \(vehicleError.localizedDescription)"
-                            return
-                        }
-                        
-                        var vehicles: [String: Vehicle] = [:]
-                        
-                        // Create a dictionary of vehicles by ID
-                        if let vehicleDocs = vehicleSnapshot?.documents {
-                            for doc in vehicleDocs {
-                                do {
-                                    var vehicle = try doc.data(as: Vehicle.self)
-                                    vehicle.id = doc.documentID
-                                    if let id = vehicle.id {
-                                        vehicles[id] = vehicle
-                                    }
-                                } catch {
-                                    print("Error decoding vehicle: \(error)")
-                                }
-                            }
-                        }
-                        
-                        // Link vehicles to tasks
-                        for i in 0..<maintenanceTasks.count {
-                            let vehicleId = maintenanceTasks[i].vehicleId
-                            maintenanceTasks[i].vehicle = vehicles[vehicleId]
-                        }
-                        
-                        self.tasks = maintenanceTasks
-                        self.isLoading = false
-                    }
-                }
-            }
-    }
-    
-    private func updateTaskStatus(taskId: String, newStatus: MaintenanceTask.MaintenanceStatus) {
-        db.collection("maintenanceTasks").document(taskId).updateData([
-            "status": newStatus.rawValue
-        ]) { error in
-            if let error = error {
-                print("Error updating task status: \(error.localizedDescription)")
-            } else {
-                // Update local data to reflect the change
-                if let index = tasks.firstIndex(where: { $0.id == taskId }) {
-                    tasks[index].status = newStatus
-                }
-            }
-        }
-    }
-}
-
-struct MaintenanceTaskRow: View {
-    var task: MaintenanceTask
-    var selectedFilter: MaintenanceTask.MaintenanceStatus
-    var onAction: () -> Void
-    
-    var body: some View {
-        HStack(spacing: 12) {
-            // Vehicle image
-            if let vehicleImageURL = task.vehicle?.vehicleImage {
-                AsyncImage(url: URL(string: vehicleImageURL)) { image in
-                    image.resizable()
-                } placeholder: {
-                    Color.gray.opacity(0.3)
-                        .overlay(
-                            Image(systemName: "car.fill")
-                                .foregroundColor(.gray)
-                                .opacity(0.5)
-                        )
-                }
-                .aspectRatio(contentMode: .fill)
-                .frame(width: 80, height: 80)
-                .cornerRadius(8)
-                .clipped()
-            } else {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.gray.opacity(0.3))
-                    .frame(width: 80, height: 80)
-                    .overlay(
-                        Image(systemName: "car.fill")
-                            .foregroundColor(.gray)
-                            .opacity(0.5)
-                    )
-            }
-            
-            // Task details
-            VStack(alignment: .leading, spacing: 4) {
-                Text(task.vehicle?.registrationNumber ?? "Unknown Vehicle")
-                    .font(.headline)
-                
-                Text(task.taskDescription)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                
-                // Show creation date if available
-                if let createdAt = task.createdAt {
-                    Text("Created: \(formattedDate(createdAt))")
-                        .font(.caption)
-                        .foregroundColor(.gray)
-                }
-            }
-            
-            Spacer()
-            
-            // Action buttons only for scheduled and active tasks
-            if selectedFilter == .scheduled {
-                Button(action: onAction) {
-                    HStack {
-                        Text("Start")
-                            .fontWeight(.medium)
-                        
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 14))
-                    }
-                    .foregroundColor(.blue)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .background(Color.blue.opacity(0.1))
-                    .cornerRadius(8)
-                }
-            } else if selectedFilter == .active {
-                Button(action: onAction) {
-                    Text("Complete")
-                        .fontWeight(.medium)
-                        .foregroundColor(.green)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(Color.green.opacity(0.1))
-                        .cornerRadius(8)
-                }
-            }
-        }
-        .padding()
-        .background(Color.white)
-        .cornerRadius(10)
-        .shadow(color: Color.gray.opacity(0.1), radius: 3, x: 0, y: 1)
-    }
-    
-    private func formattedDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .none
-        return formatter.string(from: date)
-    }
-}
-
-struct  MaintenanceTabView: View {
+/// Main Tab View
+struct MaintenanceTabView: View {
     var body: some View {
         TabView {
+//<<<<<<< HEAD
+//            MaintenanceHomeView().tabItem { Label("Home", systemImage: "house.fill") }
+//            MaintenanceProfileView().tabItem { Label("Profile", systemImage: "person.fill") }
+//        }.background(Color.white)
+//=======
             MaintenanceHomeView()
             .tabItem {
                 Label("Home", systemImage: "house.fill")
@@ -477,11 +402,12 @@ struct  MaintenanceTabView: View {
                 }
                 
         }
+//>>>>>>> 43a560a8f9c4b1d7accc741dad7a3c7ffb5b4d0b
     }
 }
 
-#Preview
-{
-    MaintenanceTabView()
+#Preview {
+    NavigationStack{
+        MaintenanceTabView()
+    }
 }
- 

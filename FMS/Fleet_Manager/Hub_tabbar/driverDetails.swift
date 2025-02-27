@@ -128,7 +128,7 @@ struct AddDriverView: View {
             _name = State(initialValue: user.name)
             _email = State(initialValue: user.email)
             _contactNumber = State(initialValue: user.phone)
-            _licenseImageURL = State(initialValue: user.license) 
+            _licenseImageURL = State(initialValue: user.license)
         _selectedVehicle = State(initialValue: user.vehiclePreference.rawValue)
         _selectedTerrain = State(initialValue: user.geoPreference.rawValue)
         }
