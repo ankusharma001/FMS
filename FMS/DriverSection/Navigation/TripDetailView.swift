@@ -234,37 +234,38 @@ struct TripDetailView: View {
                 
                 Spacer()
                 NavigationStack{
-                HStack {
-                    Button(action: {
-                        print("End Trip button tapped")
-                        navigateToHome = true
-                        endTrip(tripID: tripID, driverID: userID, vehicleID: vehicleID)
-                        AssignMaintenance.shared.handleEndTrip(for: vehicleID){
-                            result in switch result{
-                            case .success(let message):
-                                print(message)
-                            case .failure(let error):
-                                print("Error: \(error.localizedDescription)")
+                    //                    VStack{
+                    HStack {
+                        Button(action: {
+                            print("End Trip button tapped")
+                            navigateToHome = true
+                            endTrip(tripID: tripID, driverID: userID, vehicleID: vehicleID)
+                            AssignMaintenance.shared.handleEndTrip(for: vehicleID){
+                                result in switch result{
+                                case .success(let message):
+                                    print(message)
+                                case .failure(let error):
+                                    print("Error: \(error.localizedDescription)")
+                                }
                             }
+                            // Add logic for starting trip
+                            
+                        }) {
+                            Text("End Trip")
+                                .font(.headline)
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color.blue)
+                                .foregroundColor(.white)
+                                .cornerRadius(10)
+                                .padding(.leading,7)
                         }
-                        // Add logic for starting trip
-                        
-                    }) {
-                        Text("End Trip")
-                            .font(.headline)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.blue)
-                            .foregroundColor(.white)
-                            .cornerRadius(10)
-                            .padding(.leading,7)
-                    }
-                    .navigationDestination(isPresented: $navigateToHome){
-                        MainTabView()
-                            .navigationBarBackButtonHidden(true) // Hides the back button
-                                   .interactiveDismissDisabled(true)
-                    }
-                    }
+                        .navigationDestination(isPresented: $navigateToHome){
+                            MainTabView()
+                                .navigationBarBackButtonHidden(true) // Hides the back button
+                                .interactiveDismissDisabled(true)
+                        }
+                    
                     Button(action: {
                         print("SOS button tapped - Starting process")
                         
@@ -337,14 +338,16 @@ struct TripDetailView: View {
                             .foregroundColor(.white)
                             .cornerRadius(10)
                     }
-                    .alert(isPresented: $emailSent) {
-                        Alert(
-                            title: Text("Email Status"),
-                            message: Text(emailStatus),
-                            dismissButton: .default(Text("OK"))
-                        )
-                    }
-                    .padding()
+                }
+                        .alert(isPresented: $emailSent) {
+                            Alert(
+                                title: Text("Email Status"),
+                                message: Text(emailStatus),
+                                dismissButton: .default(Text("OK"))
+                            )
+                        }
+                        .padding()
+//                    }
                 }
                 .navigationBarTitle("Current Trip", displayMode: .inline)
                 .navigationBarBackButtonHidden(true)

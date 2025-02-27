@@ -25,22 +25,8 @@ struct HomeView: View {
                     .padding(.bottom, 20)
                     .padding(.horizontal)
                 }
-                
-                // Button to print the trip ID
-//                Button(action: {
-//                    print("🟢 Trip ID on button click: \(tripID ?? "No Trip Assigned")")
-//                }) {
-//                    Text("Print Trip ID")
-//                        .frame(maxWidth: .infinity)
-//                        .padding()
-//                        .background(Color.blue)
-//                        .foregroundColor(.white)
-//                        .cornerRadius(10)
-//                        .padding()
-//                }
-                
                 .background(Color(.systemGray6))
-                .navigationTitle("Driver Dashboard")
+                .navigationTitle("Home")
             }
             .onAppear {
                 fetchUser()
