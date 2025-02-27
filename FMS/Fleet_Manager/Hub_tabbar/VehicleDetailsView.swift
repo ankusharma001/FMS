@@ -73,6 +73,8 @@ struct VehicleDetailsView: View {
     
     @State private var isModified = false
     @State private var isInvalidMileage: Bool = false
+    @ObservedObject private var speechManager = SpeechManager.shared
+    @AppStorage("ttsEnabled") private var isSpeaking: Bool = true
     
     let db = Firestore.firestore()
     
@@ -84,6 +86,14 @@ struct VehicleDetailsView: View {
         _mileage = State(initialValue: "\(vehicle.mileage)")
     }
     
+    private func generateVehicleSpeechText() -> String {
+            var speechText = "Vehicle details for \(model)."
+            speechText += " Type: \(vehicleType.rawValue)."
+            speechText += " Registration Number: \(vehicle.registrationNumber)."
+            speechText += " Fuel Type: \(fuelType.rawValue)."
+            speechText += " Mileage: \(mileage) kilometers."
+            return speechText
+        }
     func getFormattedImageUrl(_ rawUrl: String?) -> String? {
         guard let rawUrl = rawUrl, !rawUrl.isEmpty else {
             print("⚠️ Empty or nil image URL")
@@ -325,6 +335,18 @@ struct VehicleDetailsView: View {
                 Text("Are you sure you want to delete this vehicle? This action cannot be undone.")
             }
         )
+        .onAppear {
+                    // Automatically read out details when the view appears if TTS is enabled
+                    if isSpeaking {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            speechManager.speak(generateVehicleSpeechText())
+                        }
+                    }
+                }
+                .onDisappear {
+                    // Stop speaking when view disappears
+                    speechManager.stopSpeaking()
+                }
     }
 }
 
