@@ -191,6 +191,7 @@ struct ProfileView: View {
     @State private var experience = "5 Years"
     @State private var vehicleType = "Heavy Truck"
     @State private var specializedTerrain = "Mountain, Highway"
+   
     
     // Logout related state variables
     @State private var showLogoutAlert = false
@@ -233,6 +234,9 @@ struct ProfileView: View {
                     
                     // License Section
                     CardView(title: "License Information") {
+                        
+                       
+                        
                         VStack(alignment: .leading, spacing: 10) {
                             Text("Driver's License")
                                 .font(.subheadline)
@@ -326,6 +330,7 @@ struct ProfileView: View {
                     phone = userData["phone"] as? String ?? phone
                     email = userData["email"] as? String ?? email
                     name = userData["name"] as? String ?? name
+//                    licenseImageURL = userData["license"] as? String ?? licenseImageURL
                     experience = userData["experience"] as? String ?? experience
                     vehicleType = userData["vehiclePreference"] as? String ?? vehicleType
                     specializedTerrain = userData["geoPreference"] as? String ?? specializedTerrain
