@@ -112,13 +112,11 @@ struct ShowVehicleListView: View {
                        .foregroundColor(.gray)
                }
                .padding(7)
-               .background(Color.white.opacity(0.1))
-               .overlay(
-                   RoundedRectangle(cornerRadius: 8)
-                       .stroke(Color.black, lineWidth: 2)
-               )
+               .background(Color.white)
+               
                .cornerRadius(8)
                .padding(.top,20)
+               .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 5)
            }
 
        }
@@ -155,13 +153,12 @@ struct ShowVehicleListView: View {
                        .foregroundColor(.gray)
                }
                .padding(7)
-               .background(Color.white.opacity(0.1))
-               .overlay(
-                   RoundedRectangle(cornerRadius: 8)
-                       .stroke(Color.black, lineWidth: 2) // 20 is the border width
-               )
+               .background(Color.white)
+               
+              
                .cornerRadius(8)
                .padding(.top,20)
+               .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 5)
            }
        }
        
@@ -197,10 +194,11 @@ struct ShowVehicleListView: View {
                     .foregroundColor(.gray)
             }
             .padding(7)
-            .background(Color.white.opacity(0.1))
-            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 2))
+            .background(Color.white)
+            
             .cornerRadius(8)
             .padding(.top,20)
+            .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 5)
         }
     }
 
@@ -226,7 +224,7 @@ struct ShowVehicleListView: View {
                     }
                     .padding(.horizontal)
 //                    .padding(.top, 20)
-                    .padding(.bottom, 20)
+                    .padding(.bottom, 10)
                     .frame(maxWidth: .infinity, alignment: .trailing)
                 }
                 .padding(.horizontal)
@@ -234,46 +232,94 @@ struct ShowVehicleListView: View {
                 List(filteredVehicles, id: \.id) { vehicle in
                     NavigationLink(destination: VehicleDetailsView(vehicle: vehicle)) {
                         HStack {
-                            Image(systemName: "truck.box.fill")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 40, height: 40)
-                                .padding(8)
-                                .background(Color.gray.opacity(0.2)) // Light gray background
-                                .clipShape(Circle()) // Rounded corners
-
-                            VStack(alignment: .leading) {
-                                Text(vehicle.model)
-                                    .foregroundColor(.black)
-                                    .font(.headline)
-                                Text(vehicle.type.rawValue)
-                                    .font(.subheadline)
-                                    .foregroundColor(.gray)
+                            // Image Container
+                            ZStack {
+                                // Background with gradient and shadow
+                                Rectangle()
+                                    .fill(
+                                        LinearGradient(
+                                            gradient: Gradient(colors: [Color.gray.opacity(0.1), Color.gray.opacity(0.3)]),
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        )
+                                    )
+                                    .frame(width: 70, height: 80)
+                                    .cornerRadius(12)
+                                    .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 5)
+                                
+                                // AsyncImage for vehicle image
+                                AsyncImage(url: URL(string: vehicle.vehicleImage)) { phase in
+                                    switch phase {
+                                    case .empty:
+                                        ProgressView()
+                                            .progressViewStyle(CircularProgressViewStyle(tint: .blue))
+                                    case .success(let image):
+                                        image
+                                            .resizable()
+                                            .scaledToFill()
+                                            .frame(width: 70, height: 80)
+                                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                                            .transition(.opacity.combined(with: .scale)) // Smooth transition
+                                    case .failure:
+                                        Image(systemName: "car.fill") // Fallback icon
+                                            .resizable()
+                                            .scaledToFit()
+                                            .frame(width: 40, height: 40)
+                                            .foregroundColor(.gray.opacity(0.5))
+                                    @unknown default:
+                                        EmptyView()
+                                    }
+                                }
                             }
-                            .padding(.leading, 0)
-
+                            
+                            // Vehicle Details
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(vehicle.model)
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundColor(.primary)
+                                    .lineLimit(1)
+                                
+                                Text(vehicle.type.rawValue)
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(.secondary)
+                                    .lineLimit(1)
+                            }
+                            .padding(.leading, 8)
+                            
                             Spacer()
-
-                            HStack {
+                            
+                            // Status Indicator
+                            HStack(spacing: 6) {
                                 Circle()
                                     .fill(vehicle.status ? Color.green : Color.red)
                                     .frame(width: 8, height: 8)
+                                    .shadow(color: vehicle.status ? Color.green.opacity(0.3) : Color.red.opacity(0.3), radius: 3, x: 0, y: 2)
+                                
                                 Text(vehicle.status ? "Active" : "Inactive")
+                                    .font(.system(size: 14, weight: .medium))
                                     .foregroundColor(vehicle.status ? .green : .red)
                             }
+                            .padding(.trailing, 8)
                         }
                         .padding()
-                        .background(Color.white)
-                        .cornerRadius(10)
+                        .background(RoundedRectangle(cornerRadius: 15).fill(Color.white))
+                        .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
+                        .animation(.easeInOut(duration: 0.3), value: vehicle.status) // Animate status change
                     }
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
                 }
-                .listStyle(PlainListStyle())
+                .listStyle(.plain)
+                .background(Color.clear)
+
             }
-        }.padding(.top,20)
+        }.padding(.top,8)
+            .background(Color(.systemGray6))
         .onAppear {
             fetchVehicles()
         }
         .navigationTitle("Vehicle List")
+        .background(Color(.systemGray6))
         .navigationBarTitleDisplayMode(.inline)
     }
 }
@@ -283,11 +329,14 @@ struct SearchBar: View {
     
     var body: some View {
         HStack {
-            Image(systemName: "magnifyingglass")
-                .foregroundColor(.gray)
+            TextField("Search...", text: $text)
+                .padding(10)
+                .background(Color.white)
+                .cornerRadius(10)
+                .padding(.horizontal)
+                .padding(.top,10)
+         
             
-            TextField("Search vehicles...", text: $text)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
             
             if !text.isEmpty {
                 Button(action: { text = "" }) {

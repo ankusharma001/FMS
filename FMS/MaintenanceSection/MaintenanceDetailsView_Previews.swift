@@ -19,9 +19,6 @@ struct MaintenanceDetailsView: View {
     
     var body: some View {
         ScrollView {
-            
-                
-               
             VStack(alignment: .leading, spacing: 16) {
                 HStack {
                     ZStack {
@@ -33,7 +30,7 @@ struct MaintenanceDetailsView: View {
                         AsyncImage(url: URL(string: vehicle.vehicleImage)) { phase in
                             switch phase {
                             case .empty:
-                                ProgressView() // Show a loading indicator
+                                ProgressView()
                             case .success(let image):
                                 image
                                     .resizable()
@@ -41,7 +38,7 @@ struct MaintenanceDetailsView: View {
                                     .frame(width:70 ,height: 80)
                                     .cornerRadius(12)
                             case .failure:
-                                Image(systemName: "photo") // Fallback image
+                                Image(systemName: "photo")
                                     .resizable()
                                     .scaledToFit()
                                     .frame(width:70 ,height: 80)
@@ -58,70 +55,41 @@ struct MaintenanceDetailsView: View {
                             .font(.subheadline)
                         HStack {
                             Circle()
-                                .fill(Color.green)
+                                .fill(vehicle.maintenanceStatus == .scheduled ? Color.orange : Color.green)
                                 .frame(width: 8, height: 8)
-                            Text(vehicle.maintenanceStatus.rawValue) // Assuming maintenanceStatus is a RawRepresentable enum
-                                .foregroundColor(.green)
+                            Text(vehicle.maintenanceStatus.rawValue)
+
                                 .font(.subheadline)
                         }
+
                         Text(vehicle.fuelType.rawValue)
-                            .font(.footnote)
+                            .font(.subheadline)
                             .foregroundColor(.gray)
                        
                     }
                     
                     Spacer()
+                
                 }
                 .padding(20)
                 .background(Color(.white))
                 .cornerRadius(20)
-                
-//                    .background(Color(.systemGray6))
-                
                 HStack {
                     InfoCards(title: "Meliage", value: vehicle.mileage)
                     InfoCards(title: "distance traveled", value:vehicle.totalDistance)
                 }
-//                
                 VStack(alignment: .leading) {
                     Text("Current Service Details").font(.headline)
                     DetailRow(title: "Service Type", value: "Preventive Maintenance")
                     DetailRow(title: "Technician", value: technicianName)
-//                    DetailRow(title: "Service Start", value: "Dec 15, 2023 - 9:30 AM")
-//                    DetailRow(title: "Location", value: "Central Shop")
+                    
                 }.padding(20)
                     .background(Color(.white))
                     .cornerRadius(20)
-//                    .background(Color(.systemGray6))
-//                
-//                VStack(alignment: .leading) {
-//                    Text("Service Items").font(.headline)
-//                    ServiceItemRow(name: "Oil Change", time: "10:15 AM")
-//                    ServiceItemRow(name: "Brake Inspection", time: "11:00 AM")
-//                    ServiceItemRow(name: "Tire Rotation", time: "11:45 AM")
-//                    ServiceItemRow(name: "Filter Replacement", time: "12:30 AM")
-//                }
-//                .padding(20)
-//                .background(Color(.white))
-//                .cornerRadius(20)
-//                .background(Color(.systemGray6))
-//                
-//                VStack(alignment: .leading) {
-//                    Text("Parts Used").font(.headline)
-//                    DetailRow(title: "Engine Oil (5W-300)", value: "1")
-//                    DetailRow(title: "Oil Filter", value: "1")
-//                    DetailRow(title: "Air Filter", value: "1")
-//                    DetailRow(title: "Brake Pads", value: "1")
-//                }
-//                .padding(20)
-//                .background(Color(.white))
-//                .cornerRadius(20)
-//                .frame(width: 350,height: 45)
-                   
+                Spacer().frame(height: 310) // Adjust height as needed
+
             }
-//            Spacer()
             .padding()
-//            .padding(20)
             .background(Color(.systemGray6))
         }.onAppear {
             fetchUserData()
@@ -214,10 +182,10 @@ struct MaintenanceDetailsView_Previews: PreviewProvider {
         NavigationView {
             MaintenanceDetailsView(
                 vehicle: Vehicle(
-                    type: .car,  // Replace with actual `VehicleType`
+                    type: .car,
                     model: "Toyota Corolla",
                     registrationNumber: "ABC-123",
-                    fuelType: .petrol,  // Replace with actual `FuelType`
+                    fuelType: .petrol,
                     mileage: 15000,
                     rc: "RC123",
                     vehicleImage: "car_image_url",
@@ -232,4 +200,5 @@ struct MaintenanceDetailsView_Previews: PreviewProvider {
         }
     }
 }
+
 

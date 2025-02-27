@@ -489,11 +489,6 @@ struct TripDetailsView_Previews: PreviewProvider {
 }
 
 
-
-
-
-
-
 //
 //import SwiftUI
 //
@@ -881,3 +876,4 @@ struct TripDetailsView_Previews: PreviewProvider {
 //        ))
 //    }
 //}
+

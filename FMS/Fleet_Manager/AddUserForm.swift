@@ -156,10 +156,11 @@ struct AddUserView: View {
         }
     }
     private var isButtonDisabled: Bool {
-        return isLoading || name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
-               email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
-               contactNumber.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    }
+            return isLoading ||
+                   name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+                   email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+                   contactNumber.trimmingCharacters(in: .whitespacesAndNewlines).count != 10
+        }
     
     
     var body: some View {

@@ -103,30 +103,69 @@ struct InventoryView: View {
         NavigationView {
             List {
                 ForEach(viewModel.inventory) { item in
-                    VStack(alignment: .leading) {
-                        Text(item.partName).font(.headline)
-                        Text("Part Number: \(item.partNumber)").font(.subheadline)
-                        Text("Supplier: \(item.supplier)").font(.footnote)
+                    VStack(alignment: .leading, spacing: 8) {
+                        // Part Name
+                        Text(item.partName)
+                            .font(.system(size: 18, weight: .bold, design: .rounded))
+                            .foregroundColor(.primary)
+                            .lineLimit(1)
+                            .padding(.bottom, 2)
 
+                        // Part Number
+                        Text("Part Number: \(item.partNumber)")
+                            .font(.system(size: 14, weight: .medium, design: .rounded))
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+
+                        // Supplier
+                        Text("Supplier: \(item.supplier)")
+                            .font(.system(size: 12, weight: .regular, design: .rounded))
+                            .foregroundColor(.gray)
+                            .lineLimit(1)
+
+                        // Quantity with Stepper
                         HStack {
                             Text("Quantity:")
+                                .font(.system(size: 14, weight: .medium, design: .rounded))
+                                .foregroundColor(.primary)
+
                             Spacer()
-                            Stepper("\(item.quantity)", onIncrement: {
-                                viewModel.updateInventoryItem(itemId: item.id, newQuantity: item.quantity + 1)
-                            }, onDecrement: {
-                                if item.quantity > 0 {
-                                    viewModel.updateInventoryItem(itemId: item.id, newQuantity: item.quantity - 1)
+
+                            // Stepper with dynamic styling
+                            Stepper(value: Binding(
+                                get: { item.quantity },
+                                set: { newValue in
+                                    viewModel.updateInventoryItem(itemId: item.id, newQuantity: newValue)
                                 }
-                            })
+                            ), in: 0...100) {
+                                Text("\(item.quantity)")
+                                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                                    .foregroundColor(.blue)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(Color.blue.opacity(0.1))
+                                    .cornerRadius(8)
+                            }
+                            .padding(.vertical, 4)
                         }
+                        .padding(.top, 4)
                     }
                     .padding()
+                    .background(Color.white)
+                    .cornerRadius(12)
+                    .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
+                    .animation(.easeInOut(duration: 0.2), value: item.quantity) // Animate quantity changes
+                    .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
                 }
                 .onDelete(perform: deleteItem)
-            }
+                
+            }.listStyle(.plain)
+                .background(Color.clear)
             
             .navigationTitle("Inventory")
             .navigationBarTitleDisplayMode(.large)
+            .background(Color(.systemGray6))
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(action: {

@@ -18,8 +18,8 @@ struct CurrentTripView: View {
     @State private var isCurrentTrip = false
     @State private var tripID: String? = nil
     @State private var isTripStarted: Bool = false
-    @State private var tripStatusFromDB: String = "Unknown" // Store trip status from Firestore
-
+    @State private var tripStatusFromDB: String = "Unknown"
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             if tripID != nil && tripStatusFromDB == "In Progress" {
@@ -31,7 +31,7 @@ struct CurrentTripView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
                             Image(systemName: "truck.box.fill")
-                                .foregroundColor(.blue)
+                                .foregroundColor(.gray)
                                 .font(.system(size: 24))
                             
                             VStack(alignment: .leading, spacing: 2) {
@@ -100,31 +100,21 @@ struct CurrentTripView: View {
             else if tripID == nil || tripStatusFromDB == "Completed"
             {
                 VStack {
-                    Spacer() // Push content to center vertically
+                    Spacer()
                     
                     VStack(alignment: .center, spacing: 16) {
-                        Text("NO Trips")
-                            .font(.largeTitle)
-                            .fontWeight(.bold)
-                            .multilineTextAlignment(.center)
-                        
                         Image(systemName: "truck.box.fill")
-                            .foregroundColor(.blue)
-                            .font(.system(size: 50)) // Increased icon size
-                        
-                        // Vertical line
-                        Rectangle()
-                            .frame(width: 2, height: 40) // Thin vertical line
                             .foregroundColor(.gray)
+                            .font(.system(size: 50))
                         
                         Text("No Available Trips")
                             .font(.title3)
                             .foregroundColor(.gray)
                     }
                     
-                    Spacer() // Push content to center vertically
+                    Spacer()
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity) // Ensure full-screen alignment
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .multilineTextAlignment(.center)
 
                 

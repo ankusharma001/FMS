@@ -34,18 +34,19 @@ struct DriverHeaderView: View {
                     Text("Available")
                         .font(.subheadline)
                         .foregroundColor(.gray)
-
                     Toggle("", isOn: toggleDisabled ? .constant(false) : $isAvailable)
                         .labelsHidden()
                         .toggleStyle(SwitchToggleStyle(tint: .green))
                         .disabled(toggleDisabled)
                 }
             }
+            .frame(width : 350)
             .padding()
             .background(Color.white)
             .cornerRadius(10)
             .shadow(color: .gray.opacity(0.2), radius: 5, x: 0, y: 2)
             .padding(.horizontal)
+            
         }
         .onAppear {
             fetchDriverData()

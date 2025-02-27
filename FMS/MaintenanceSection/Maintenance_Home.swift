@@ -53,25 +53,7 @@ struct MaintenanceHomeView: View {
 //                        .foregroundColor(.white)
 //                        .cornerRadius(8)
 //                }
-                
-                HStack(spacing: 12) {
-                    StatisticCardView(
-                        iconName: "square.grid.2x2.fill",
-                        iconColor: .blue,
-                        title: "Under Maintenance",
-                        value: "\(vehicleData.filter { !$0.status }.count)"
-                    )
-                    
-                    StatisticCardView(
-                        iconName: "checkmark.circle.fill",
-                        iconColor: .green,
-                        title: "Completed Tasks",
-                        value: "\(vehicleData.filter { $0.status }.count)"
-                    )
-                }
-                .padding()
-                
-                VStack(spacing: 15) {
+                VStack(spacing: 13) {
                     HStack {
                         Image(systemName: "magnifyingglass")
                             .foregroundColor(.gray)
@@ -105,6 +87,24 @@ struct MaintenanceHomeView: View {
                 }
                 .padding()
                 .background(Color(.systemGray6))
+                HStack(spacing: 12) {
+                    StatisticCardView(
+                        iconName: "square.grid.2x2.fill",
+                        iconColor: .blue,
+                        title: "Under Maintenance",
+                        value: "\(vehicleData.filter { !$0.status }.count)"
+                    )
+                    
+                    StatisticCardView(
+                        iconName: "checkmark.circle.fill",
+                        iconColor: .green,
+                        title: "Completed Tasks",
+                        value: "\(vehicleData.filter { $0.status }.count)"
+                    )
+                }
+                .padding()
+                
+               
                 
                 if isLoading {
                     Spacer()
@@ -214,6 +214,7 @@ struct MaintenanceTaskRow: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text(vehicle.model)
                     .font(.headline)
+                    .foregroundColor(.black)
                 
                 Text(vehicle.registrationNumber)
                     .font(.subheadline)
@@ -221,7 +222,12 @@ struct MaintenanceTaskRow: View {
                 
                 Text(vehicle.maintenanceStatus.rawValue)
                     .font(.caption)
-                    .foregroundColor(vehicle.maintenanceStatus == .active ? .orange : (vehicle.maintenanceStatus == .completed ? .green : .gray))
+                    .foregroundColor(
+                        vehicle.maintenanceStatus == .active ? .green :
+                            vehicle.maintenanceStatus == .completed ? .green :
+                            vehicle.maintenanceStatus == .scheduled ? .orange :
+                                .gray
+                    )
             }
 
             Spacer()
@@ -239,7 +245,7 @@ struct MaintenanceTaskRow: View {
                     Text(vehicle.maintenanceStatus == .scheduled ? "Start" : (vehicle.maintenanceStatus == .active ? "Complete" : "Completed"))
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
-                        .background(vehicle.maintenanceStatus == .scheduled ? Color.blue : (vehicle.maintenanceStatus == .active ? Color.orange : Color.green))
+                        .background(vehicle.maintenanceStatus == .scheduled ? Color.orange : (vehicle.maintenanceStatus == .active ? Color.green : Color.green))
                         .foregroundColor(.white)
                         .cornerRadius(8)
                 }

@@ -18,11 +18,6 @@ struct vehicleImageLoader: View {
                         .scaledToFill()
                         .frame(width: 380, height: 300)
                         .cornerRadius(25)
-//                        .clipped()
-//                        .overlay(RoundedRectangle(cornerRadius: 25).stroke(Color.gray.opacity(0.3), lineWidth: 2)) 
-//                        .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
-
-
                         .onAppear {
                             print("✅ Successfully loaded image")
                         }
@@ -57,10 +52,6 @@ struct vehicleImageLoader: View {
             .opacity(0.5)
             .padding()
             .padding(.horizontal)
-//            .overlay(
-//                RoundedRectangle(cornerRadius: 15)
-//                    .stroke(Color.gray, lineWidth: 3) // Frame for placeholder
-//            )
             .shadow(color: Color.black.opacity(0.1), radius: 8, x: 4, y: 4)
     }
 }
@@ -98,11 +89,7 @@ struct VehicleDetailsView: View {
             print("⚠️ Empty or nil image URL")
             return nil
         }
-        
-        // If the URL doesn't start with http or https, it might be a Firebase Storage reference
         if !rawUrl.hasPrefix("http") {
-            // Assuming you're using Firebase Storage, construct the proper URL
-            // Adjust the bucket URL according to your Firebase project
             let storageUrl = "https://firebasestorage.googleapis.com/v0/b/YOUR-FIREBASE-PROJECT.appspot.com/o/"
             let encodedPath = rawUrl.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? rawUrl
             return "\(storageUrl)\(encodedPath)?alt=media"
@@ -246,17 +233,20 @@ struct VehicleDetailsView: View {
                 }
                 .padding(.horizontal)
                 Text("Rc")
+                    .padding(.leading,20)
                     vehicleImageLoader(imageUrl: getFormattedImageUrl(vehicle.rc))
                         .onAppear {
                             print("🔍 Vehicle image property: \(vehicle.rc)")
                         }
             
                 Text("Insurance")
+                    .padding(.leading,20)
                 vehicleImageLoader(imageUrl: getFormattedImageUrl(vehicle.insurance))
                     .onAppear {
                         print("🔍 Vehicle image property: \(vehicle.rc)")
                     }
                 Text("pollution")
+                    .padding(.leading,20)
                 vehicleImageLoader(imageUrl: getFormattedImageUrl(vehicle.pollution))
                     .onAppear {
                         print("🔍 Vehicle image property: \(vehicle.rc)")
@@ -346,7 +336,6 @@ struct DetailField: View {
     
     
     @State private var localText: String
-    
     init(title: String, value: String, isEditable: Bool, onChange: ((String) -> Void)? = nil) {
         self.title = title
         self.isEditable = isEditable
@@ -356,15 +345,21 @@ struct DetailField: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(title)
-                .font(.caption)
-                .foregroundColor(.gray)
-            
+            HStack {
+                Text(title)
+                    .font(.caption)
+                    .foregroundColor(.gray)
+                
+                if isEditable {
+                    Circle()
+                        .fill(Color.blue)
+                        .frame(width: 8, height: 8) // Small green dot
+                }}
+                
             if isEditable {
                 TextField("", text: $localText)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .padding(10)
-                    .background(Color.white)
                     .cornerRadius(10)
                     .onChange(of: localText) { newValue in
                         onChange?(newValue)
@@ -375,7 +370,7 @@ struct DetailField: View {
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .disabled(true)
                     .padding(10)
-                    .background(Color.white)
+                    .background(Color.clear)
                     .cornerRadius(10)
             }
         }
