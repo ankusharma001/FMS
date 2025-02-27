@@ -160,7 +160,6 @@ struct StatCard: View {
         }
         .frame(width: 98, height: 100)
         .cornerRadius(10)
-
     }
 }
 
@@ -296,12 +295,33 @@ struct TripdashBoard: View {
 
     var body: some View {
         NavigationView {
-            VStack {
+            VStack(spacing: 0) {
+                // Add space after navigation title
+                Spacer().frame(height: 12)
+                
                 SearchBarView(searchText: $searchText)
+                
+                // Add space after search bar
+                Spacer().frame(height: 16)
+                
                 StatsView()
+                
+                // Add space after stats view
+                Spacer().frame(height: 24)
+                
+                // Add section header for trips
+                HStack {
+                    Text("Scheduled Trips")
+                        .font(.headline)
+                        .fontWeight(.bold)
+                        .padding(.leading)
+                    Spacer()
+                }
+                .padding(.top, 8)
+                .padding(.bottom, 8)
 
                 ScrollView {
-                    LazyVStack(spacing: 12) {
+                    LazyVStack(spacing: 16) { // Increased spacing between trip cards
                         ForEach(filteredTrips) { trip in
                             NavigationLink(destination: TripDetailsView(trip: trip)) {
                                 TripCardView2(trip: trip)
@@ -310,11 +330,12 @@ struct TripdashBoard: View {
                         }
                     }
                     .padding(.horizontal)
+                    .padding(.top, 8) // Add space at the top of the scroll view
                 }
             }
-            .navigationTitle("Trips") // Correct placement of navigation title
+            .background(Color(.systemGray6))
+            .navigationTitle("Trips")
         }
-        .background(Color(.systemGray6).edgesIgnoringSafeArea(.all))
         .onAppear {
             fetchTrips()
         }
