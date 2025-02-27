@@ -1,4 +1,5 @@
 import SwiftUI
+
 struct AddPartView: View {
     @ObservedObject var viewModel: InventoryViewModel
     @State private var newPartName = ""
@@ -6,6 +7,15 @@ struct AddPartView: View {
     @State private var newSupplier = ""
     @State private var newQuantity = ""
     @Environment(\.dismiss) var dismiss
+
+    // Computed property to check if all fields are filled
+    private var isFormValid: Bool {
+        !newPartName.isEmpty &&
+        !newPartNumber.isEmpty &&
+        !newSupplier.isEmpty &&
+        !newQuantity.isEmpty &&
+        Int(newQuantity) != nil // Ensuring quantity is a valid integer
+    }
 
     var body: some View {
         NavigationView {
@@ -28,15 +38,14 @@ struct AddPartView: View {
                     .padding(.horizontal)
 
                 Button("Add Part") {
-                    if let quantityInt = Int(newQuantity), !newPartName.isEmpty, !newPartNumber.isEmpty, !newSupplier.isEmpty {
+                    if let quantityInt = Int(newQuantity) {
                         viewModel.addNewPart(partName: newPartName, partNumber: newPartNumber, supplier: newSupplier, quantity: quantityInt)
                         dismiss()
-                    } else {
-                        print("Invalid input")
                     }
                 }
                 .buttonStyle(.borderedProminent)
                 .padding(.top)
+                .disabled(!isFormValid) // Disables the button if the form is invalid
 
                 Spacer()
             }
