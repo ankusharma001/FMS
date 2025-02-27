@@ -462,11 +462,20 @@ struct  MaintenanceTabView: View {
             .tabItem {
                 Label("Home", systemImage: "house.fill")
             }
-            MaintenanceProfileView() // ✅ Replacing Text with ProfileView
+            
+            // ✅ Replacing Text with ProfileView
+                
+            InventoryView()
+                .tabItem{
+                    Image(systemName: "wrench.and.screwdriver")
+                    Text("Inventory")
+                }
+                MaintenanceProfileView()
                 .tabItem {
                     Image(systemName: "person.fill")
                     Text("Profile")
                 }
+                
         }
     }
 }

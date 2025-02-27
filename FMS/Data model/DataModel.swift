@@ -234,6 +234,11 @@ class Trip: Identifiable, Codable {
         self.TripStatus = TripStatus
         self.assignedVehicle = assignedVehicle
     }
+    
+    
+   
+
+    
 //    func completeTrip(maintenanceList: inout [Maintenance]) {
 //            guard let vehicle = assignedVehicle else { return }
 //
