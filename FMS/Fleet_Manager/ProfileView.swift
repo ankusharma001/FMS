@@ -222,7 +222,7 @@ struct FleetProfileView: View {
             .background(Color.gray.opacity(0.05))
             .onAppear(perform: fetchUserProfile)
             .navigationTitle("Profile")
-            .navigationBarTitleDisplayMode(.inline)
+//            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: { isShowingEditProfile.toggle() }) {

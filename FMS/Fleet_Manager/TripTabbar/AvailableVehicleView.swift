@@ -262,3 +262,4 @@ struct AvailableVehicleView: View {
         print("Vehicle selected")
     }
 }
+
