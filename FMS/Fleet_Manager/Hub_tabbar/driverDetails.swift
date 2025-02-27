@@ -81,6 +81,7 @@ struct DriverDetails: View {
 
 struct AddDriverView: View {
     let user: Driver
+    
 
     @State private var name: String
     @State private var email: String
@@ -95,7 +96,10 @@ struct AddDriverView: View {
     @State private var showAlert: Bool = false
     @State private var showImagePicker: Bool = false
     @State private var selectedImageItem: PhotosPickerItem? = nil
-    @State private var licenseImage: UIImage? = nil
+    @State private var licenseImageurl:  UIImage?
+    
+    @State private var licenseimage: String  = ""
+    
     
     @State private var isInvalidContactNumber: Bool = false
     
@@ -108,30 +112,37 @@ struct AddDriverView: View {
         @State private var initialLicenseNumber: String = ""
         @State private var initialVehicle: String = ""
         @State private var initialTerrain: String = ""
-        @State private var initialLicenseImage: UIImage?
+        @State private var initialLicenseImageurl : UIImage?
 
-        var hasChanges: Bool {
-            return name != initialName ||
-                   email != initialEmail ||
-                   contactNumber != initialContactNumber ||
-                   licenseNumber != initialLicenseNumber ||
-                   selectedVehicle != initialVehicle ||
-                   selectedTerrain != initialTerrain ||
-                   licenseImage !== initialLicenseImage
-        }
+    var hasChanges: Bool {
+           return name != initialName ||
+                  email != initialEmail ||
+                  contactNumber != initialContactNumber ||
+                  licenseNumber != initialLicenseNumber ||
+                  selectedVehicle != initialVehicle ||
+                  selectedTerrain != initialTerrain ||
+                  licenseImageurl !== initialLicenseImageurl
+       }
+
+        
     
 
     private let db = Firestore.firestore()
 
     init(user: Driver) {
-            self.user = user
-            _name = State(initialValue: user.name)
-            _email = State(initialValue: user.email)
-            _contactNumber = State(initialValue: user.phone)
-            _licenseImageURL = State(initialValue: user.license)
+        self.user = user
+        _name = State(initialValue: user.name)
+        _email = State(initialValue: user.email)
+        _contactNumber = State(initialValue: user.phone)
+        _licenseImageURL = State(initialValue: user.license)
         _selectedVehicle = State(initialValue: user.vehiclePreference.rawValue)
         _selectedTerrain = State(initialValue: user.geoPreference.rawValue)
+
+        if let driverId = user.id {
+            fetchDriverLicenseImage(driverId: driverId)  // Fetch the license image URL
         }
+    }
+
 
     
     func validateContactNumber(_ input: String) {
@@ -159,6 +170,16 @@ struct AddDriverView: View {
        }
     var body: some View {
         Form {
+            Button(action: {
+                print("user id in driver details : \(String(describing: user.id)) \(String(describing: licenseimage))")
+            }) {
+                Text("Fetch License Image")
+                    .padding()
+                    .background(Color.blue)
+                    .foregroundColor(.white)
+                    .cornerRadius(10)
+            }
+
             Section(header: Text("Name")) {
                 TextField("Enter Name", text: $name)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
@@ -213,15 +234,15 @@ struct AddDriverView: View {
             //                    .disabled(!isEditing)
             //            }
             
-            Section(header: Text("License Photo")) {
-                           ZStack {
-                               DriverImageLoader(imageUrl: licenseImageURL)
-                                   .onTapGesture {
-                                       showImagePicker.toggle()
-                                   }
-                           }
-                           .disabled(!isEditing)
-                       }
+//            Section(header: Text("License Photo")) {
+//                ZStack {
+//                    DriverImageLoader(imageUrl: licenseimage)
+//                        .onTapGesture {
+//                            showImagePicker.toggle()
+//                        }
+//                }
+//                .disabled(!isEditing)
+//            }
                 
                 Section(header: Text("Vehicle Preference")) {
                     TextField("Enter Vehicle Type", text: $selectedVehicle)
@@ -234,6 +255,11 @@ struct AddDriverView: View {
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .disabled(!isEditing)
                 }
+            }.onAppear {
+                if let driverId = user.id {
+                    fetchDriverLicenseImage(driverId: driverId)
+                }
+                print("driver image url : > \(licenseimage)")
             }
             .photosPicker(
                 isPresented: $showImagePicker,
@@ -244,7 +270,7 @@ struct AddDriverView: View {
                 Task {
                     if let newItem = newItem, let data = try? await newItem.loadTransferable(type: Data.self) {
                         if let uiImage = UIImage(data: data) {
-                            licenseImage = uiImage
+                            licenseImageurl = uiImage
                         }
                     }
                 }
@@ -285,7 +311,7 @@ struct AddDriverView: View {
             initialLicenseNumber = licenseNumber
             initialVehicle = selectedVehicle
             initialTerrain = selectedTerrain
-            initialLicenseImage = licenseImage
+//            initialLicenseImageurl = licenseImage
         }
         
         /// Updates driver details in Firestore
@@ -309,12 +335,35 @@ struct AddDriverView: View {
                 }
             }
         }
+    
+    func fetchDriverLicenseImage(driverId: String) {
+        db.collection("drivers").document(driverId).getDocument { snapshot, error in
+            if let error = error {
+                print("Error fetching license data: \(error)")
+            } else if let snapshot = snapshot, snapshot.exists {
+                print("📄 Driver document data: \(snapshot.data() ?? [:])")
+                DispatchQueue.main.async {
+                    if let licenseUrl = snapshot.get("licenseImageUrl") as? String {
+                        self.licenseimage = licenseUrl
+                        print("✅ License image URL retrieved: \(licenseUrl)")
+                    } else {
+                        print("⚠️ No license image URL found in driver document")
+                    }
+                }
+            } else {
+                print("❌ Driver document not found")
+            }
+        }
+
+    }
+
     }
 
 
 #Preview {
     NavigationView {
         DriverDetails(driver: Driver(
+        
             name: "John Doe",
             email: "john.doe@example.com",
             phone: "1234567890",
