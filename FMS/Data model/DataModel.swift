@@ -15,6 +15,13 @@ enum Role: String, Codable {
     case maintenance = "Maintenance Personnel"
 }
 
+
+enum MaintenanceStatus: String, Codable, CaseIterable {
+    case scheduled = "Scheduled"
+    case active = "Active"
+    case completed = "Completed"
+}
+
 enum Experience: String, Codable, CaseIterable {
     case lessThanOne = "Less than 1 year"
     case lessThanFive = "Less than 5 years"
@@ -154,8 +161,9 @@ class Vehicle: Codable, Identifiable {
     var pollution: String
     var totalDistance: Int
     var status: Bool
+    var maintenanceStatus: MaintenanceStatus
     
-    init(type: VehicleType, model: String, registrationNumber: String, fuelType: FuelType, mileage: Int, rc: String, vehicleImage: String, insurance: String, pollution: String, status: Bool, totalDistance: Int) {
+    init(type: VehicleType, model: String, registrationNumber: String, fuelType: FuelType, mileage: Int, rc: String, vehicleImage: String, insurance: String, pollution: String, status: Bool, totalDistance: Int, maintenanceStatus: MaintenanceStatus) {
         self.type = type
         self.model = model
         self.registrationNumber = registrationNumber
@@ -167,6 +175,7 @@ class Vehicle: Codable, Identifiable {
         self.pollution = pollution
         self.status = status
         self.totalDistance = totalDistance
+        self.maintenanceStatus = maintenanceStatus
     }
 
     // Custom init method to handle Firestore decoding
@@ -185,6 +194,7 @@ class Vehicle: Codable, Identifiable {
         self.pollution = try values.decode(String.self, forKey: .pollution)
         self.status = try values.decode(Bool.self, forKey: .status)
         self.totalDistance = try values.decode(Int.self, forKey: .totalDistance)
+        self.maintenanceStatus = try values.decode(MaintenanceStatus.self, forKey: .maintenanceStatus)
         
         // Custom decoding for `status` to handle type mismatch
 //        if let statusString = try values.decodeIfPresent(String.self, forKey: .status) {
@@ -209,6 +219,7 @@ class Vehicle: Codable, Identifiable {
         case pollution
         case status
         case totalDistance
+        case maintenanceStatus
     }
 }
 
