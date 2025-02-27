@@ -454,6 +454,7 @@ struct AddNewTripView: View {
     @State private var isLoading = false
     @State private var distance: Double = 0.0
     @State private var estimatedTime: Double = 0.0
+    @Environment(\.presentationMode) var presentationMode
     
     let firestoreService = FirestoreService()
     
@@ -578,9 +579,11 @@ struct AddNewTripView: View {
                                                 self.alertMessage = AlertMessage(title: "Warning",
                                                     message: "Trip added but failed to update vehicle distance: \(error.localizedDescription)")
                                             }
+                                            self.presentationMode.wrappedValue.dismiss()
                                         }
                                     } else {
                                         self.alertMessage = AlertMessage(title: "Done", message: "Trip added successfully!")
+                                        self.presentationMode.wrappedValue.dismiss()
                                     }
                                 case .failure(let error):
                                     self.alertMessage = AlertMessage(title: "Error", message: error.localizedDescription)
