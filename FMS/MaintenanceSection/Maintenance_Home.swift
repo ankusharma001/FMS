@@ -243,9 +243,31 @@ struct StatisticCardView: View {
 struct MaintenanceTabView: View {
     var body: some View {
         TabView {
-            MaintenanceHomeView().tabItem { Label("Home", systemImage: "house.fill") }
-            MaintenanceProfileView().tabItem { Label("Profile", systemImage: "person.fill") }
-        }.background(Color.white)
+//<<<<<<< HEAD
+//            MaintenanceHomeView().tabItem { Label("Home", systemImage: "house.fill") }
+//            MaintenanceProfileView().tabItem { Label("Profile", systemImage: "person.fill") }
+//        }.background(Color.white)
+//=======
+            MaintenanceHomeView()
+            .tabItem {
+                Label("Home", systemImage: "house.fill")
+            }
+            
+            // ✅ Replacing Text with ProfileView
+                
+            InventoryView()
+                .tabItem{
+                    Image(systemName: "wrench.and.screwdriver")
+                    Text("Inventory")
+                }
+                MaintenanceProfileView()
+                .tabItem {
+                    Image(systemName: "person.fill")
+                    Text("Profile")
+                }
+                
+        }
+//>>>>>>> 43a560a8f9c4b1d7accc741dad7a3c7ffb5b4d0b
     }
 }
 
