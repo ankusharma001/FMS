@@ -58,11 +58,7 @@ struct MaintenanceDetailsView: View {
                                 .fill(vehicle.maintenanceStatus == .scheduled ? Color.orange : Color.green)
                                 .frame(width: 8, height: 8)
                             Text(vehicle.maintenanceStatus.rawValue)
-<<<<<<< HEAD
-                                .foregroundColor(vehicle.maintenanceStatus == .scheduled ? .orange : .green)
-=======
-                                .foregroundColor(.green)
->>>>>>> fc0ca92312a7a4f31aed03a16f6823534dff4567
+
                                 .font(.subheadline)
                         }
 
