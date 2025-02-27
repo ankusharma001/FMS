@@ -123,8 +123,11 @@ struct MaintenanceHomeView: View {
                     ScrollView {
                         LazyVStack(spacing: 16) {
                             ForEach(filteredVehicles, id: \.id) { vehicle in
-                                MaintenanceTaskRow(vehicle: vehicle, assignedVehicles: assignedVehicles) {
-                                    print("Perform action on \(vehicle.registrationNumber)")
+                                NavigationLink(destination: MaintenanceDetailsView(vehicle: vehicle, userUUID: userUUID)) {
+
+                                    MaintenanceTaskRow(vehicle: vehicle, assignedVehicles: assignedVehicles) {
+                                        print("Perform action on \(vehicle.registrationNumber)")
+                                    }
                                 }
                             }
                         }
