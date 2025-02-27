@@ -423,14 +423,12 @@ struct TripDetailsView: View {
                 
                 self.updatedTrip = updatedTripCopy
                 successMessage = "Trip Created successfully!"
+                DispatchQueue.main.async {
+                                self.presentationMode.wrappedValue.dismiss()
+                            }
                 
             }
             showSuccessMessage = true
-            
-            DispatchQueue.main.async {
-                           // Dismiss the current view and navigate back to the previous one (Dashboard)
-                           self.presentationMode.wrappedValue.dismiss()
-                       }
         }
     }
     private func removeDriverAndVehicle() {
