@@ -1,188 +1,10 @@
-
-
-//import SwiftUI
-//import FirebaseFirestore
-//
-//struct ProfileView: View {
-//    @State private var userData: [String: Any] = [:]
-//    @State private var userUUID: String? = UserDefaults.standard.string(forKey: "loggedInUserUUID")
-//    
-//    @State private var isEditing = false
-//    @State private var name = "John Anderson"
-//    @State private var email = "john.anderson@company.com" // Read-only
-//    @State private var phone = "+1 (555) 123-4567"
-//    @State private var experience = "5 Years"
-//    @State private var vehicleType = "Heavy Truck"
-//    @State private var specializedTerrain = "Mountain, Highway"
-//    @State private var licenseImage: UIImage? = nil // Placeholder for license image
-//
-//    var body: some View {
-//        
-//        
-//        VStack(spacing: 20) {
-//            // Centered Name at the Top
-//            Text(userData["name"] as? String ?? "John Anderson")
-//                .font(.largeTitle)
-//                .bold()
-//                .foregroundColor(.black)
-//                .padding(.top, 20)
-//
-//            // Edit Button
-//            Button(action: { isEditing.toggle() }) {
-//                HStack {
-//                    Image(systemName: isEditing ? "checkmark.circle.fill" : "pencil.circle.fill")
-//                    Text(isEditing ? "Save Changes" : "Edit Profile")
-//                }
-//                .font(.system(size: 16, weight: .bold))
-//                .padding(.horizontal, 15)
-//                .padding(.vertical, 8)
-//                .background(Color.blue.opacity(0.2))
-//                .cornerRadius(10)
-//                .foregroundColor(.blue)
-//            }
-//
-//            // Editable Fields (Name, Phone) + Read-Only Email
-//            SectionCard {
-//                ProfileRow(icon: "person.fill", title: "Name", value: $name, isEditable: isEditing)
-//                ProfileRow(icon: "envelope.fill", title: "Email", value: .constant(email), isEditable: false) // Read-only
-//                ProfileRow(icon: "phone.fill", title: "Phone", value: $phone, isEditable: isEditing)
-//            }
-//
-//            // License Image Section
-//            SectionCard {
-//                VStack {
-//                    Text("License Image")
-//                        .bold()
-//                        .frame(maxWidth: .infinity, alignment: .leading)
-//
-//                    if let image = licenseImage {
-//                        Image(uiImage: image)
-//                            .resizable()
-//                            .scaledToFit()
-//                            .frame(height: 150)
-//                            .cornerRadius(8)
-//                    } else {
-//                        Rectangle()
-//                            .fill(Color.gray.opacity(0.3))
-//                            .frame(height: 150)
-//                            .cornerRadius(8)
-//                            .overlay(
-//                                Text("No Image Available")
-//                                    .foregroundColor(.gray)
-//                            )
-//                    }
-//                }
-//                .padding(.horizontal)
-//            }
-//
-//            // Experience & Expertise
-//            SectionCard {
-//                ProfileRow(icon: "clock.fill", title: "Experience", value: .constant(experience), isEditable: false)
-//                ProfileRow(icon: "car.fill", title: "Vehicle Type", value: .constant(vehicleType), isEditable: false)
-//                ProfileRow(icon: "map.fill", title: "Specialized Terrain", value: .constant(specializedTerrain), isEditable: false)
-//            }
-//
-//            Spacer()
-//        }
-//        .padding()
-//        .background(Color.gray.opacity(0.1)) // Light gray background for better contrast
-//        .navigationBarHidden(true) // Hide default navigation bar
-//        .onAppear(
-//            perform: fetchUserProfile
-//        )
-//    }
-//    
-//    func fetchUserProfile() {
-//        guard let userUUID = userUUID else {
-//            print("No user UUID found")
-//            return
-//        }
-//        
-//        print("User UUID: \(userUUID)")
-//        let db = Firestore.firestore()
-//        db.collection("users").document(userUUID).getDocument { (document, error) in
-//            if let document = document, document.exists {
-//                DispatchQueue.main.async {
-//                    self.userData = document.data() ?? [:]
-//                    phone = userData["phone"] as? String ?? "John Anderson"
-//                    email = userData["email"] as? String ?? "John Anderson"
-//                    experience = userData["experience"] as? String ?? "John Anderson"
-//                    vehicleType = userData["selectedVehicle"] as? String ?? "John Anderson"
-//                    specializedTerrain = userData["selectedTerrain"] as? String ?? "Plain"
-//                }
-//            } else {
-//                print("User not found")
-//            }
-//        }
-//    }
-//}
-//
-//// Reusable Profile Row Component with SF Symbols
-//struct ProfileRow: View {
-//    var icon: String
-//    var title: String
-//    @Binding var value: String
-//    var isEditable: Bool
-//
-//    var body: some View {
-//        HStack {
-//            Image(systemName: icon)
-//                .foregroundColor(.blue)
-//                .frame(width: 30)
-//
-//            Text(title)
-//                .bold()
-//                .frame(width: 120, alignment: .leading)
-//                .foregroundColor(.black)
-//
-//            if isEditable {
-//                TextField("Enter \(title)", text: $value)
-//                    .textFieldStyle(RoundedBorderTextFieldStyle())
-//            } else {
-//                Text(value)
-//                    .foregroundColor(.gray)
-//            }
-//            Spacer()
-//        }
-//        .padding(.horizontal)
-//    }
-//}
-//
-//// Reusable Card Layout for Sections
-//struct SectionCard<Content: View>: View {
-//    let content: Content
-//
-//    init(@ViewBuilder content: () -> Content) {
-//        self.content = content()
-//    }
-//
-//    var body: some View {
-//        VStack(spacing: 16) {
-//            content
-//        }
-//        .padding()
-//        .background(Color.white)
-//        .cornerRadius(12)
-//        .shadow(radius: 3)
-//    }
-//}
-//
-//// Preview
-//struct ProfileView_Previews: PreviewProvider {
-//    static var previews: some View {
-//        NavigationView {
-//            ProfileView()
-//        }
-//    }
-//}
-
 import SwiftUI
 import FirebaseFirestore
 
 struct ProfileView: View {
     @State private var userData: [String: Any] = [:]
     @State private var userUUID: String? = UserDefaults.standard.string(forKey: "loggedInUserUUID")
-    
+    @State private var licenseImageUrl = ""
     @State private var isEditing = false
     @State private var isShowingEditProfile = false
     @State private var name = "Raj Chaudhary"
@@ -233,26 +55,40 @@ struct ProfileView: View {
                     
                     // License Section
                     CardView(title: "License Information") {
-                        VStack(alignment: .leading, spacing: 10) {
-                            Text("Driver's License")
-                                .font(.subheadline)
-                                .foregroundColor(.gray)
-                            
-                            ZStack {
-                                Rectangle()
-                                    .fill(Color.gray.opacity(0.2))
-                                    .frame(height: 180)
-                                    .cornerRadius(12)
-                                    .overlay(
-                                        Image("license_image")
-                                            .resizable()
-                                            .scaledToFit()
+                                VStack(alignment: .leading, spacing: 10) {
+                                    Text("Driver's License")
+                                        .font(.subheadline)
+                                        .foregroundColor(.gray)
+
+                                    ZStack {
+                                        Rectangle()
+                                            .fill(Color.gray.opacity(0.2))
                                             .frame(height: 180)
                                             .cornerRadius(12)
-                                    )
+                                        
+                                        AsyncImage(url: URL(string: licenseImageUrl)) { phase in
+                                            switch phase {
+                                            case .empty:
+                                                ProgressView() // Show a loading indicator
+                                            case .success(let image):
+                                                image
+                                                    .resizable()
+                                                    .scaledToFit()
+                                                    .frame(height: 180)
+                                                    .cornerRadius(12)
+                                            case .failure:
+                                                Image(systemName: "photo") // Fallback image
+                                                    .resizable()
+                                                    .scaledToFit()
+                                                    .frame(height: 180)
+                                                    .foregroundColor(.gray)
+                                            @unknown default:
+                                                EmptyView()
+                                            }
+                                        }
+                                    }
+                                }
                             }
-                        }
-                    }
                     
                     // Driver Details
                     CardView(title: "Experience & Expertise") {
@@ -329,9 +165,41 @@ struct ProfileView: View {
                     experience = userData["experience"] as? String ?? experience
                     vehicleType = userData["vehiclePreference"] as? String ?? vehicleType
                     specializedTerrain = userData["geoPreference"] as? String ?? specializedTerrain
+                    
+                    if let licenseUrl = userData["licenseImageUrl"] as? String {
+                                        self.licenseImageUrl = licenseUrl
+                                    } else {
+                                        // If not in the user document, check if there's a driverId that we can use to fetch from drivers collection
+                                        if let driverId = userData["driverId"] as? String {
+                                            self.fetchDriverLicenseImage(driverId: driverId)
+                                        } else {
+                                            // If no driverId, try using the userUUID to fetch from drivers collection
+                                            self.fetchDriverLicenseImage(driverId: userUUID)
+                                        }
+                                    }
                 }
             } else {
                 print("User not found")
+            }
+        }
+    }
+    
+    func fetchDriverLicenseImage(driverId: String) {
+        let db = Firestore.firestore()
+        db.collection("drivers").document(driverId).getDocument { snapshot, error in
+            if let error = error {
+                print("Error fetching license data: \(error)")
+            } else if let snapshot = snapshot, snapshot.exists {
+                DispatchQueue.main.async {
+                    if let licenseUrl = snapshot.get("licenseImageUrl") as? String {
+                        self.licenseImageUrl = licenseUrl
+                        print("License image URL retrieved: \(licenseUrl)")
+                    } else {
+                        print("No license image URL found in driver document")
+                    }
+                }
+            } else {
+                print("Driver document not found")
             }
         }
     }
@@ -439,6 +307,7 @@ struct EditProfileView: View {
             }
         }
     }
+    
 }
 
 // MARK: - Supporting Views
