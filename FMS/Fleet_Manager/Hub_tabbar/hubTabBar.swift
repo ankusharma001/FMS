@@ -514,12 +514,16 @@ struct VehicleList: View {
     var filteredVehicles: [Vehicle]
     
     var body: some View {
-        VStack {
-            ForEach(filteredVehicles.prefix(2)) { vehicle in
-                VehicleCard(vehicle: vehicle)
+        ScrollView{
+            VStack {
+                ForEach(filteredVehicles.prefix(2)) { vehicle in
+                    VehicleCard(vehicle: vehicle)
+                }
             }
+            .padding(.horizontal)
+            .padding(.bottom,8)
         }
-        .padding(.horizontal)
+       
     }
 }
 
@@ -587,6 +591,7 @@ struct DriverList: View {
                 }
             }
             .padding(.horizontal)
+            .padding(.bottom,12)
         }
     }
 }
@@ -597,10 +602,10 @@ struct DriverCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(alignment: .top) {
-                Image(systemName: "person.crop.circle.fill")
+                Image(systemName: "person.circle.fill")
                     .resizable()
-                    .frame(width: 35, height: 35)
-                    .foregroundColor(.blue)
+                    .frame(width: 40, height: 40)
+                    .foregroundColor(.gray)
                 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(user.name)
@@ -633,42 +638,155 @@ struct DriverCard: View {
 }
 
 struct MaintenancePersonnelLists: View {
-    @State private var maintenanceList = [
-        MaintenancePerson(name: "Ram Prasad", email: "john.anderson@example.com"),
-        MaintenancePerson(name: "Sham Prasad", email: "sham.anderson@example.com"),
-        MaintenancePerson(name: "Raam Prasad", email: "raam.anderson@example.com")
-    ]
-
+    @State private var searchText = ""
+    @State private var maintenanceList: [MaintenancePerson] = []
+    @State private var isLoading = true
+    @State private var errorMessage: String?
+    
+    let db = Firestore.firestore()
+    
     var body: some View {
-        List {
-            ForEach(maintenanceList) { person in
+        VStack(alignment: .leading, spacing: 0) {
+            if isLoading {
                 HStack {
-                    Image(systemName: "person.crop.circle")
-                        .foregroundColor(.blue)
-                        .font(.title2)
-                    
-                    VStack(alignment: .leading) {
-                        Text(person.name)
-                            .font(.headline)
-                            .foregroundColor(.primary)
-                        Text(person.email)
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                    }
+                    Spacer()
+                    ProgressView()
+                        .scaleEffect(1.2)
+                        .padding()
                     Spacer()
                 }
-                .padding(.vertical, 8)
-                .padding(.horizontal, 16)
+                .frame(height: 180)
                 .background(Color(.systemBackground))
-                .cornerRadius(10)
-                .shadow(color: Color.black.opacity(0.1), radius: 3, x: 0, y: 2)
+                .cornerRadius(12)
+                .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+                .padding(.horizontal)
+            } else if let error = errorMessage {
+                HStack {
+                    Spacer()
+                    VStack(spacing: 8) {
+                        Image(systemName: "exclamationmark.triangle")
+                            .font(.largeTitle)
+                            .foregroundColor(.orange)
+                        Text(error)
+                            .font(.subheadline)
+                            .foregroundColor(.red)
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding()
+                    Spacer()
+                }
+                .frame(height: 180)
+                .background(Color(.systemBackground))
+                .cornerRadius(12)
+                .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+                .padding(.horizontal)
+            } else if maintenanceList.isEmpty {
+                HStack {
+                    Spacer()
+                    VStack(spacing: 8) {
+                        Image(systemName: "person.crop.circle.badge.questionmark")
+                            .font(.largeTitle)
+                            .foregroundColor(.gray)
+                        Text("No maintenance personnel found")
+                            .font(.headline)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding()
+                    Spacer()
+                }
+                .frame(height: 180)
+                .background(Color(.systemBackground))
+                .cornerRadius(12)
+                .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+                .padding(.horizontal)
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 10) {
+                        ForEach(maintenanceList.prefix(3)) { person in
+                            HStack(spacing: 16) {
+                                ZStack {
+                                    Circle()
+                                        .fill(Color(.systemGray5))
+                                        .frame(width: 45, height: 45)
+                                    
+                                    Image(systemName: "person.circle.fill")
+                                        .resizable()
+                                        .frame(width: 40, height: 40)
+                                        .foregroundColor(.gray)
+                                }
+                                
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(person.name)
+                                        .font(.system(size: 17, weight: .semibold))
+                                        .foregroundColor(.primary)
+                                    
+                                    Text(person.email)
+                                        .font(.system(size: 14))
+                                        .foregroundColor(.secondary)
+                                        .lineLimit(1)
+                                }
+                                
+                                Spacer()
+                                
+//                                Image(systemName: "ellipsis")
+//                                    .foregroundColor(.gray)
+//                                    .padding(.trailing, 8)
+                            }
+                            .padding(.vertical, 12)
+                            .padding(.horizontal, 16)
+                            .background(Color(.systemBackground))
+                            .cornerRadius(12)
+                            .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+                        }
+                    }
+                    .padding(.horizontal)
+                }
+                .frame(height: 220)
             }
-            .onDelete(perform: deletePerson)
         }
+        .onAppear {
+            fetchMaintenancePersonnel()
+        }
+        .background(Color.clear)
     }
 
-    private func deletePerson(at offsets: IndexSet) {
+    func fetchMaintenancePersonnel() {
+        isLoading = true
+        db.collection("users")
+            .whereField("role", isEqualTo: "Maintenance Personnel")
+            .getDocuments { snapshot, error in
+                isLoading = false
+                
+                if let error = error {
+                    self.errorMessage = error.localizedDescription
+                    return
+                }
+                
+                guard let documents = snapshot?.documents else {
+                    self.errorMessage = "No maintenance personnel found"
+                    return
+                }
+                
+                self.maintenanceList = documents.compactMap { document in
+                    MaintenancePerson(document: document)
+                }
+            }
+    }
+
+    func deletePerson(at offsets: IndexSet) {
+        let personsToDelete = offsets.map { maintenanceList[$0] }
+        
+        // Remove from local array first for UI responsiveness
         maintenanceList.remove(atOffsets: offsets)
+        
+        // Delete from Firestore
+        for person in personsToDelete {
+            db.collection("users").document(person.id).delete { error in
+                if let error = error {
+                    print("Error deleting document: \(error.localizedDescription)")
+                }
+            }
+        }
     }
 }
 

@@ -55,14 +55,15 @@ struct MaintenanceDetailsView: View {
                             .font(.subheadline)
                         HStack {
                             Circle()
-                                .fill(Color.green)
+                                .fill(vehicle.maintenanceStatus == .scheduled ? Color.orange : Color.green)
                                 .frame(width: 8, height: 8)
                             Text(vehicle.maintenanceStatus.rawValue)
-                                .foregroundColor(.green)
+
                                 .font(.subheadline)
                         }
+
                         Text(vehicle.fuelType.rawValue)
-                            .font(.footnote)
+                            .font(.subheadline)
                             .foregroundColor(.gray)
                        
                     }
