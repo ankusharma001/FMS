@@ -149,6 +149,7 @@ struct AddNewVehicle: View {
     @State private var status = true
     @State private var totalDistance = 0
     @State private var maintenanceStatus = ""
+    @State private var notes = ""
     
     @State private var showAlert = false
     @State private var alertMessage = ""
@@ -278,7 +279,8 @@ struct AddNewVehicle: View {
             pollution: "",
             status: status,
             totalDistance: Int(totalDistance),
-            maintenanceStatus: MaintenanceStatus(rawValue: maintenanceStatus) ?? .scheduled
+            maintenanceStatus: MaintenanceStatus(rawValue: maintenanceStatus) ?? .scheduled,
+            notes: ""
         )
 
         let group = DispatchGroup()
@@ -321,7 +323,8 @@ struct AddNewVehicle: View {
                 "pollution": newVehicle.pollution,
                 "totalDistance": newVehicle.totalDistance,
                 "status": true,
-                "maintenanceStatus": newVehicle.maintenanceStatus.rawValue
+                "maintenanceStatus": newVehicle.maintenanceStatus.rawValue,
+                "notes": newVehicle.notes
             ]) { error in
                 if let error = error {
                     print("Error adding vehicle: \(error)")
